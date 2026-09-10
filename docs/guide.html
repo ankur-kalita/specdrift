@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>specdrift Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground:   #eceff3;
+    --surface:  #ffffff;
+    --sunken:   #e2e6ec;
+    --ink:      #131820;
+    --muted:    #5a6472;
+    --hair:     #cfd6df;
+    --accent:   #0f6d8c;
+    --accent-soft: #dcecf2;
+    --pass:     #1c7a4a;
+    --fail:     #ad2b21;
+    --warn:     #9a5708;
+
+    --term-bg:  #12171e;
+    --term-fg:  #ccd4de;
+    --term-dim: #6f7b89;
+    --term-grn: #63c48d;
+    --term-cyn: #62bcd6;
+    --term-amb: #d9a55f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --col: 68ch;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:  #0d1117;
+      --surface: #161c24;
+      --sunken:  #1d242e;
+      --ink:     #e4e8ee;
+      --muted:   #929daa;
+      --hair:    #2c353f;
+      --accent:  #52bcd8;
+      --accent-soft: #17323d;
+      --pass:    #47b47c;
+      --fail:    #e0837b;
+      --warn:    #d6a05a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:  #0d1117;
+    --surface: #161c24;
+    --sunken:  #1d242e;
+    --ink:     #e4e8ee;
+    --muted:   #929daa;
+    --hair:    #2c353f;
+    --accent:  #52bcd8;
+    --accent-soft: #17323d;
+    --pass:    #47b47c;
+    --fail:    #e0837b;
+    --warn:    #d6a05a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.65;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--col);
+    margin-inline: auto;
+  }
+
+  /* ---------- masthead ---------- */
+
+  header.mast {
+    max-width: var(--col);
+    margin-inline: auto;
+    padding-block: 56px 40px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(38px, 9vw, 58px);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  h1 .dot { color: var(--accent); }
+
+  .standfirst {
+    font-family: var(--cond);
+    font-size: clamp(20px, 4.4vw, 25px);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin: 0 0 24px;
+    text-wrap: balance;
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .facts li {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    border-radius: 2px;
+    padding: 3px 9px;
+    background: var(--surface);
+  }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: 44px 0; }
+
+  h2 {
+    font-family: var(--cond);
+    font-size: clamp(25px, 5.5vw, 32px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--cond);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    margin: 28px 0 6px;
+  }
+
+  .sect-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--hair);
+  }
+
+  p { margin: 0 0 15px; }
+  p.lead { font-size: 18px; }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    border-radius: 3px;
+    padding: 1.5px 5px;
+    word-break: break-word;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---------- callout: the analogy ---------- */
+
+  .analogy {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 18px 20px;
+    margin: 22px 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .analogy p:last-child { margin-bottom: 0; }
+  .analogy .who {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  /* ---------- terminal ---------- */
+
+  .term {
+    background: var(--term-bg);
+    color: var(--term-fg);
+    border-radius: 5px;
+    margin: 20px 0;
+    overflow: hidden;
+    border: 1px solid #232c37;
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 12px;
+    background: #1a212a;
+    border-bottom: 1px solid #232c37;
+  }
+  .term-bar i {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #3a4552; display: block;
+  }
+  .term-bar span {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    color: var(--term-dim);
+    margin-left: 6px;
+  }
+  .term pre {
+    margin: 0;
+    padding: 14px 15px 16px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.8px;
+    line-height: 1.75;
+    color: var(--term-fg);
+  }
+  .term .c { color: var(--term-cyn); }
+  .term .g { color: var(--term-grn); }
+  .term .d { color: var(--term-dim); }
+  .term .p { color: var(--term-grn); }
+
+  /* ---------- code panel (yaml etc) ---------- */
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    margin: 20px 0;
+  }
+  .panel-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--sunken);
+  }
+  .panel pre {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.8px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  /* ---------- module split ---------- */
+
+  .split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .mod {
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    padding: 16px 17px;
+  }
+  .mod.pure { border-top: 3px solid var(--pass); }
+  .mod.impure { border-top: 3px solid var(--warn); }
+  .mod .kind {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 9px;
+  }
+  .mod.pure .kind { color: var(--pass); }
+  .mod.impure .kind { color: var(--warn); }
+  .mod h4 {
+    font-family: var(--mono);
+    font-size: 14.5px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .mod p { font-size: 14.5px; line-height: 1.55; margin: 0; color: var(--muted); }
+  .mod ul { margin: 8px 0 0; padding-left: 17px; font-size: 14.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---------- pipeline diagram ---------- */
+
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    padding: 8px 10px 12px;
+    margin: 22px 0;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; width: 100%; min-width: 430px; height: auto; }
+  .cap {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 10px 2px 0;
+    line-height: 1.5;
+  }
+
+  /* ---------- tables ---------- */
+
+  .tbl-scroll { overflow-x: auto; margin: 20px 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14.5px;
+    min-width: 380px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px 9px 0;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--ink);
+  }
+  td code { background: none; padding: 0; color: var(--accent); }
+  td:first-child { padding-right: 18px; white-space: nowrap; }
+  .exit td:first-child { font-family: var(--mono); font-weight: 600; }
+
+  /* ---------- steps ---------- */
+
+  ol.steps { list-style: none; counter-reset: s; margin: 22px 0 0; padding: 0; }
+  ol.steps > li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 14px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--hair);
+  }
+  ol.steps > li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  ol.steps > li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+  ol.steps h3 { margin: 0 0 3px; font-size: 17.5px; }
+  ol.steps p { margin: 0; font-size: 15px; color: var(--muted); }
+  ol.steps .see {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    margin-top: 7px;
+    display: block;
+  }
+  ol.steps .see b { color: var(--accent); font-weight: 500; }
+
+  /* ---------- glossary ---------- */
+
+  .gloss { margin: 20px 0 0; }
+  .gloss details {
+    border-bottom: 1px solid var(--hair);
+  }
+  .gloss summary {
+    cursor: pointer;
+    padding: 11px 4px 11px 0;
+    font-family: var(--mono);
+    font-size: 14.5px;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .gloss summary::-webkit-details-marker { display: none; }
+  .gloss summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 16px;
+    flex: none;
+  }
+  .gloss details[open] summary::after { content: "\2212"; }
+  .gloss details[open] summary { color: var(--accent); }
+  .gloss .body { padding: 0 4px 16px 0; font-size: 15px; }
+  .gloss .body p { margin: 0 0 10px; }
+  .gloss .body p:last-child { margin: 0; }
+
+  /* ---------- decision ---------- */
+
+  .decision {
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    padding: 22px;
+    margin-top: 22px;
+    background: var(--surface);
+  }
+  .decision h3 { margin-top: 0; }
+  .opts { display: grid; gap: 12px; margin-top: 18px; }
+  .opt {
+    border: 1px solid var(--hair);
+    border-radius: 3px;
+    padding: 14px 15px;
+    background: var(--ground);
+  }
+  .opt .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .opt p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .opt b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    max-width: var(--col);
+    margin: 56px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+
+<header class="mast">
+  <p class="eyebrow">Field guide · Rust + GitHub Actions</p>
+  <h1>specdrift<span class="dot">.</span></h1>
+  <p class="standfirst">A tiny Rust program that notices when your laptop changes — and the excuse we needed to learn how CI actually works.</p>
+  <ul class="facts">
+    <li>~350 lines of Rust</li>
+    <li>2 pipeline files</li>
+    <li>3 operating systems</li>
+    <li>beginner-first</li>
+  </ul>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <span class="sect-tag">Start here</span>
+    <h2>The one-sentence version</h2>
+    <p class="lead">We are building a small program that writes down what your laptop is made of, so that later it can tell you what changed — and then we are going to wrap it in an automated robot that checks our work every single time we save it.</p>
+    <p>The program is the fun part. <strong>The robot is the point.</strong> That robot is called CI, and by the end of this you will have built one from scratch and be able to explain every line of it.</p>
+  </section>
+
+  <section>
+    <span class="sect-tag">The main idea</span>
+    <h2>So what is CI, really?</h2>
+    <p>CI stands for <strong>Continuous Integration</strong>. Ignore the name — it's a bad name and it explains nothing.</p>
+    <p>Here is what it actually is: <strong>a computer somewhere else that runs your tests every time you push code to GitHub.</strong> That's it. That's the whole concept.</p>
+
+    <div class="analogy">
+      <span class="who">Think of it like this</span>
+      <p>Imagine a very strict friend who lives in the cloud. Every time you save your homework, they grab a fresh copy, do it over from scratch on their own computer, and text you either ✅ or ❌.</p>
+      <p>They never get tired, they never say "it works on my machine", and they always start from zero — so they catch the stuff you forgot to save.</p>
+    </div>
+
+    <h3>Why anyone bothers</h3>
+    <p>Because "it works on my machine" is the single most expensive sentence in software. Your laptop has your files, your settings, your installed tools. The cloud computer has <em>none</em> of that. If your code works there, it genuinely works.</p>
+    <p>Everything else you'll hear about CI — jobs, matrices, artifacts, caching — is just detail hanging off that one idea.</p>
+  </section>
+
+  <section>
+    <span class="sect-tag">The program</span>
+    <h2>What specdrift does</h2>
+    <p>Two commands. The first takes a photo of your machine. The second compares today's machine against that photo.</p>
+
+    <div class="term">
+      <div class="term-bar"><i></i><i></i><i></i><span>zsh — specdrift</span></div>
+<pre><span class="p">$</span> <span class="c">specdrift snapshot -o baseline.json</span>
+saved 14 facts to baseline.json
+
+<span class="d">... a week passes. macOS updates. you plug in a USB drive ...</span>
+
+<span class="p">$</span> <span class="c">specdrift diff baseline.json</span>
+  ~ os.version          15.6 -&gt; 15.7
+  + disk./Volumes/USB   62.9 GB
+2 changes <span class="d">(exit 1)</span>
+</pre>
+    </div>
+
+    <p>That's genuinely useful on its own — "my machine feels slower, did something change?" is a real question with no easy answer today.</p>
+
+    <h3>The clever bit: exit codes</h3>
+    <p>When any program finishes, it hands back a single number. <code>0</code> means "fine". Anything else means "not fine". Every CI system on earth reads that number and nothing else.</p>
+
+    <div class="tbl-scroll">
+      <table class="exit">
+        <thead><tr><th>Number</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>Nothing changed — the pipeline goes green</td></tr>
+          <tr><td>1</td><td>Something drifted — the pipeline goes red</td></tr>
+          <tr><td>2</td><td>Something broke (missing file, bad JSON)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Because we chose those numbers deliberately, specdrift can be dropped straight into a pipeline as a check. You'll <em>feel</em> how CI and programs talk to each other, instead of being told about it.</p>
+
+    <h3>One design decision worth understanding</h3>
+    <p>Some facts about your laptop never change — the CPU model, the total RAM. Others change every second — how much memory is free right now.</p>
+    <p>If we compared everything, the answer would always be "everything changed!" and the tool would be useless. So each fact is labelled <strong>stable</strong> or <strong>volatile</strong>, and we only compare the stable ones unless you ask for <code>--all</code>.</p>
+    <p>That's a small thing, but it's the difference between a tool and a toy.</p>
+  </section>
+
+  <section>
+    <span class="sect-tag">The code</span>
+    <h2>How the program is split up</h2>
+    <p>Four small files. The split between them is the one thing I'd love you to take away from this project, because it's <em>why</em> the CI part will work at all.</p>
+
+    <div class="split">
+      <div class="mod pure">
+        <span class="kind">Pure · testable anywhere</span>
+        <h4>facts.rs</h4>
+        <p>Describes what a "fact" is and turns the whole snapshot into JSON text and back.</p>
+      </div>
+      <div class="mod pure">
+        <span class="kind">Pure · testable anywhere</span>
+        <h4>diff.rs</h4>
+        <p>Takes two snapshots, hands back a list of what's different. Never touches your actual hardware.</p>
+      </div>
+      <div class="mod impure">
+        <span class="kind">Touches the real machine</span>
+        <h4>collect.rs</h4>
+        <p>The only file that asks your laptop questions. Deliberately kept boring — it just fills in a list.</p>
+      </div>
+      <div class="mod impure">
+        <span class="kind">Touches the real world</span>
+        <h4>main.rs</h4>
+        <p>Reads your command, prints the output, picks the exit code.</p>
+      </div>
+    </div>
+
+    <h3>Why the split matters (this is the good part)</h3>
+    <p>Our CI robot runs on a <strong>Linux machine in a data centre</strong>. It is not a MacBook. It has different chips, different memory, different disks.</p>
+    <p>So imagine we'd written a test that says <em>"check the CPU is an Apple M4"</em>. On your desk: passes. In the cloud: fails instantly, forever, and you'd have no idea why.</p>
+    <p>Because <code>diff.rs</code> never asks the real machine anything — you hand it two made-up snapshots and it just compares them — it gives the same answer on <em>any</em> computer on Earth. That's what makes it testable in CI.</p>
+
+    <div class="analogy">
+      <span class="who">The lesson underneath</span>
+      <p>Code that is easy to test and code that works in CI are <strong>the same code</strong>. People usually learn this the painful way, after a week of red pipelines. You're getting it up front.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">The pipeline</span>
+    <h2>The robot we're building</h2>
+    <p>A "pipeline" is just a text file telling GitHub what to run. A <strong>job</strong> is one chunk of that work. Jobs can run side by side, or wait for each other.</p>
+    <p>Ours has three jobs, arranged like this:</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 250" role="img" aria-label="Diagram: the lint and test jobs run side by side; when both pass, the build job runs on Linux, macOS and Windows.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+
+        <text x="8" y="16" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--muted)">ON EVERY PUSH</text>
+
+        <!-- lint -->
+        <rect x="8" y="32" width="176" height="60" rx="4" fill="var(--sunken)" stroke="var(--hair)"/>
+        <text x="22" y="55" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="600" fill="var(--ink)">lint</text>
+        <text x="22" y="74" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--muted)">is the code tidy?</text>
+
+        <!-- test -->
+        <rect x="8" y="112" width="176" height="60" rx="4" fill="var(--sunken)" stroke="var(--hair)"/>
+        <text x="22" y="135" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="600" fill="var(--ink)">test</text>
+        <text x="22" y="154" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--muted)">do the tests pass?</text>
+
+        <text x="8" y="196" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">these two run at the</text>
+        <text x="8" y="211" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">same time — neither</text>
+        <text x="8" y="226" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">needs the other</text>
+
+        <!-- connectors -->
+        <path d="M 184 62 L 214 62 L 214 102" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+        <path d="M 184 142 L 214 142 L 214 102" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+        <path d="M 214 102 L 254 102" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#ar)"/>
+
+        <text x="196" y="92" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--accent)">both must pass</text>
+
+        <!-- build group -->
+        <rect x="264" y="32" width="368" height="140" rx="4" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="278" y="52" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="600" fill="var(--ink)">build</text>
+        <text x="278" y="70" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--muted)">same steps, three machines</text>
+
+        <rect x="278" y="84" width="110" height="34" rx="3" fill="var(--surface)" stroke="var(--hair)"/>
+        <text x="292" y="105" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">ubuntu</text>
+
+        <rect x="396" y="84" width="110" height="34" rx="3" fill="var(--surface)" stroke="var(--hair)"/>
+        <text x="410" y="105" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">macos</text>
+
+        <rect x="514" y="84" width="104" height="34" rx="3" fill="var(--surface)" stroke="var(--hair)"/>
+        <text x="528" y="105" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">windows</text>
+
+        <text x="278" y="142" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">written once, run three times.</text>
+        <text x="278" y="158" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">this is called a &#8220;matrix&#8221;.</text>
+
+        <text x="264" y="196" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">a second, separate file handles releases — it only wakes up</text>
+        <text x="264" y="211" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">when you tag a version, and publishes downloadable</text>
+        <text x="264" y="226" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">programs for all three systems.</text>
+      </svg>
+    </div>
+
+    <p>Here's roughly what that looks like as a file. Don't worry about understanding it yet — we'll write it together, line by line, and I'll explain each piece as we add it.</p>
+
+    <div class="panel">
+      <div class="panel-head">.github / workflows / ci.yml</div>
+<pre>on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cargo test
+
+  build:
+    needs: [lint, test]        # &lt;- wait for both
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: cargo build --release</pre>
+    </div>
+
+    <h3>Every CI idea, and where you'll meet it</h3>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Idea</th><th>Where it shows up</th></tr></thead>
+        <tbody>
+          <tr><td>Triggers</td><td>What wakes the robot: a push, or a version tag</td></tr>
+          <tr><td>Parallel jobs</td><td><code>lint</code> and <code>test</code> running side by side</td></tr>
+          <tr><td>Dependencies</td><td><code>needs: [lint, test]</code> — build waits</td></tr>
+          <tr><td>Matrix</td><td>One job definition, three operating systems</td></tr>
+          <tr><td>Caching</td><td>Making the robot 6× faster by reusing downloads</td></tr>
+          <tr><td>Artifacts</td><td>Keeping the built programs so you can download them</td></tr>
+          <tr><td>Conditions</td><td>The release file only runs on a tag</td></tr>
+          <tr><td>Permissions</td><td>Why the robot can't publish until you let it</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">The plan</span>
+    <h2>How we'll actually do this</h2>
+    <p>We push to GitHub at every step, so you watch the pipeline <em>grow</em> instead of it appearing finished and mysterious.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Empty project on GitHub</h3>
+          <p>Create the repo, make an empty Rust project, push it. No robot yet — on purpose.</p>
+          <span class="see">you'll see <b>your repo, live, with nothing checking it</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>The smallest possible robot</h3>
+          <p>One file, one job, three steps. We'll read it together until every line makes sense.</p>
+          <span class="see">you'll see <b>your first green checkmark ✅</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Write the real logic, tests first</h3>
+          <p>Build <code>facts.rs</code> and <code>diff.rs</code> by writing the test before the code. Sounds backwards. Works beautifully.</p>
+          <span class="see">you'll see <b>your tests running on a computer in a data centre</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Break it on purpose</h3>
+          <p>We'll deliberately push broken code and read the red failure log together. Reading a failed pipeline is the actual skill — one that only ever goes green teaches you nothing.</p>
+          <span class="see">you'll see <b>a red ❌, and learn to not panic at it</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Make it a real program</h3>
+          <p>Add <code>collect.rs</code> and <code>main.rs</code>. Now it reads your actual laptop and you can run it for real.</p>
+          <span class="see">you'll see <b>specdrift working on your own machine</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Split into three jobs + the matrix</h3>
+          <p>Turn the one small job into the fan-out shape from the diagram above, and add caching.</p>
+          <span class="see">you'll see <b>the job graph branch out, and get much faster</b></span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Ship version 0.1.0</h3>
+          <p>Add the release file, tag the version, push the tag.</p>
+          <span class="see">you'll see <b>real downloadable programs on a real release page</b></span>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <span class="sect-tag">Reference</span>
+    <h2>Every word I used that I shouldn't have assumed</h2>
+    <p>Open any of these whenever you hit the word and it doesn't mean anything to you. There's no order — dip in.</p>
+
+    <div class="gloss">
+      <details>
+        <summary>repo / repository</summary>
+        <div class="body"><p>A project folder that Git is tracking. When it lives on GitHub, other people (and robots) can reach it. "Push to the repo" = "send my saved work up to GitHub".</p></div>
+      </details>
+      <details>
+        <summary>commit</summary>
+        <div class="body"><p>A save point, with a note attached explaining what you changed. Your project's history is a chain of these. Committing is local — it doesn't leave your laptop until you push.</p></div>
+      </details>
+      <details>
+        <summary>push</summary>
+        <div class="body"><p>Uploading your commits to GitHub. This is the moment the CI robot wakes up.</p></div>
+      </details>
+      <details>
+        <summary>pipeline / workflow</summary>
+        <div class="body"><p>Two words for the same thing: the file that tells CI what to do. GitHub calls it a <em>workflow</em>; most of the industry says <em>pipeline</em>. They live in a folder called <code>.github/workflows/</code>.</p></div>
+      </details>
+      <details>
+        <summary>job</summary>
+        <div class="body"><p>One chunk of work inside a pipeline, running on its own fresh computer. Our pipeline has three: <code>lint</code>, <code>test</code>, <code>build</code>. Separate jobs get separate machines — which is why they can run at the same time.</p></div>
+      </details>
+      <details>
+        <summary>runner</summary>
+        <div class="body"><p>The actual computer GitHub rents you to run a job. It's created from scratch, runs your steps, and is destroyed. Nothing survives between jobs unless you explicitly save it.</p></div>
+      </details>
+      <details>
+        <summary>matrix</summary>
+        <div class="body"><p>A way to say "run this same job several times with one thing changed". We use it to run one build definition on Linux, macOS and Windows without writing it three times.</p></div>
+      </details>
+      <details>
+        <summary>artifact</summary>
+        <div class="body"><p>A file the robot made that you want to keep — here, the compiled program. Because the runner is destroyed afterwards, anything you don't explicitly save as an artifact is gone.</p></div>
+      </details>
+      <details>
+        <summary>caching</summary>
+        <div class="body"><p>The runner starts empty every time, so it re-downloads all of Rust's building blocks on every run — about 3 minutes wasted. A cache stashes them between runs and cuts it to roughly 30 seconds. You will see this difference with your own eyes.</p></div>
+      </details>
+      <details>
+        <summary>tag</summary>
+        <div class="body"><p>A permanent name stuck onto one specific commit, usually a version number like <code>v0.1.0</code>. We use a tag as the signal that means "this one is worth publishing".</p></div>
+      </details>
+      <details>
+        <summary>exit code</summary>
+        <div class="body"><p>The single number a program hands back when it finishes. <code>0</code> = fine, anything else = not fine. This is the entire language CI speaks. Green checkmark = your steps all returned 0.</p></div>
+      </details>
+      <details>
+        <summary>YAML</summary>
+        <div class="body"><p>The file format pipelines are written in (files ending <code>.yml</code>). It's just lists and labels — but <strong>indentation is meaningful</strong>, so a stray space genuinely breaks it. This trips up absolutely everyone, including people who've done it for years.</p></div>
+      </details>
+      <details>
+        <summary>cargo</summary>
+        <div class="body"><p>Rust's do-everything tool. <code>cargo build</code> compiles, <code>cargo test</code> runs tests, <code>cargo fmt</code> tidies formatting. Roughly what Maven is in your Java class.</p></div>
+      </details>
+      <details>
+        <summary>clippy</summary>
+        <div class="body"><p>Rust's built-in advisor. It reads your code and points out things that work but could be better. Making CI treat its advice as errors is a cheap way to keep quality from sliding.</p></div>
+      </details>
+      <details>
+        <summary>linting</summary>
+        <div class="body"><p>Automated nitpicking — checking style and suspicious patterns rather than whether the code works. It's the cheapest, fastest check, which is why it runs first.</p></div>
+      </details>
+      <details>
+        <summary>pure function</summary>
+        <div class="body"><p>A function where the same input always gives the same output, and which doesn't reach out to the world — no reading files, no asking the hardware. Pure functions are trivial to test, which is exactly why we pushed all our real logic into <code>diff.rs</code>.</p></div>
+      </details>
+      <details>
+        <summary>TDD (test-driven development)</summary>
+        <div class="body"><p>Writing the test <em>before</em> the code. You describe what you want, watch it fail, then write just enough to make it pass. It feels backwards for about an hour and then feels obvious.</p></div>
+      </details>
+      <details>
+        <summary>JSON</summary>
+        <div class="body"><p>A plain-text way of writing structured data that both humans and programs can read. Our snapshots are JSON files — you can open one in any text editor and just read it.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">Over to you</span>
+    <h2>One decision, in plain words</h2>
+
+    <div class="decision">
+      <h3>Should we also learn Docker here?</h3>
+      <p>In your Java class, the pipeline ends by packing the app into a <strong>container</strong> — a sealed box holding the program plus everything it needs to run, so it behaves identically anywhere. Docker is the tool that makes those boxes.</p>
+      <p>I left that step out of your Rust project. Here's the honest trade-off:</p>
+
+      <div class="opts">
+        <div class="opt">
+          <span class="tag">My suggestion — leave it out</span>
+          <p><b>Learn one thing properly.</b> Docker is a whole subject of its own. Bolting it on means you'd be learning CI and containers simultaneously, and probably half-learning both. We can add it in an afternoon later, once CI feels easy.</p>
+        </div>
+        <div class="opt">
+          <span class="tag">The case for putting it in</span>
+          <p><b>Two projects that mirror each other.</b> Your Rust pipeline would have the same shape as your Java one, so each reinforces the other and the class material sticks harder. Costs about 20 extra lines.</p>
+        </div>
+      </div>
+
+      <p style="margin-top:18px">Either answer is genuinely fine — <strong>just tell me "leave it out" or "put it in"</strong> and I'll start building.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <span>specdrift</span>
+  <span>github.com/ankur-kalita</span>
+  <span>10 Sep 2026</span>
+</footer>
+
+</body>
+</html>
