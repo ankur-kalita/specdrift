@@ -1,3 +1,4 @@
+mod collect;
 mod diff;
 mod facts;
 
