@@ -102,10 +102,15 @@ mod tests {
     fn keys_serialize_in_sorted_order() {
         let json = sample().to_json().expect("serialize");
         let cpu = json.find("cpu.model").expect("cpu.model present");
-        let avail = json.find("memory.available").expect("memory.available present");
+        let avail = json
+            .find("memory.available")
+            .expect("memory.available present");
         let total = json.find("memory.total").expect("memory.total present");
         assert!(cpu < avail, "cpu.model must come before memory.available");
-        assert!(avail < total, "memory.available must come before memory.total");
+        assert!(
+            avail < total,
+            "memory.available must come before memory.total"
+        );
     }
 
     #[test]

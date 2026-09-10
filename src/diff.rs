@@ -4,9 +4,19 @@ use std::collections::BTreeSet;
 /// One difference between two snapshots.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
-    Added { key: String, value: String },
-    Removed { key: String, value: String },
-    Changed { key: String, from: String, to: String },
+    Added {
+        key: String,
+        value: String,
+    },
+    Removed {
+        key: String,
+        value: String,
+    },
+    Changed {
+        key: String,
+        from: String,
+        to: String,
+    },
 }
 
 impl Change {

@@ -9,7 +9,11 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 #[derive(Parser)]
-#[command(name = "specdrift", version, about = "Detect what changed about your machine")]
+#[command(
+    name = "specdrift",
+    version,
+    about = "Detect what changed about your machine"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -68,9 +72,7 @@ fn run_snapshot(output: PathBuf) -> ExitCode {
 fn run_diff(baseline_path: PathBuf, all: bool) -> ExitCode {
     let text = match std::fs::read_to_string(&baseline_path) {
         Ok(text) => text,
-        Err(err) => {
-            return fail(format!("could not read {}: {err}", baseline_path.display()))
-        }
+        Err(err) => return fail(format!("could not read {}: {err}", baseline_path.display())),
     };
 
     let baseline: Snapshot = match Snapshot::from_json(&text) {
@@ -91,15 +93,22 @@ fn run_diff(baseline_path: PathBuf, all: bool) -> ExitCode {
         return ExitCode::from(EXIT_OK);
     }
 
+    // Pad every key to the same width so the values line up in a column.
+    let width = changes.iter().map(|c| c.key().len()).max().unwrap_or(0);
+
     for change in &changes {
         match change {
-            Change::Added { key, value } => println!("  + {key}  {value}"),
-            Change::Removed { key, value } => println!("  - {key}  {value}"),
-            Change::Changed { key, from, to } => println!("  ~ {key}  {from} -> {to}"),
+            Change::Added { key, value } => println!("  + {key:<width$}  {value}"),
+            Change::Removed { key, value } => println!("  - {key:<width$}  {value}"),
+            Change::Changed { key, from, to } => println!("  ~ {key:<width$}  {from} -> {to}"),
         }
     }
 
-    let noun = if changes.len() == 1 { "change" } else { "changes" };
+    let noun = if changes.len() == 1 {
+        "change"
+    } else {
+        "changes"
+    };
     println!("{} {noun} since {}", changes.len(), baseline.captured_at);
     ExitCode::from(EXIT_DRIFT)
 }
