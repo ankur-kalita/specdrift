@@ -6,6 +6,7 @@ description = "Detects what changed about your machine since a saved baseline"
 license = "MIT"
 
 [dependencies]
+clap = { version = "4.6.6", features = ["derive"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sysinfo = "0.39.6"
