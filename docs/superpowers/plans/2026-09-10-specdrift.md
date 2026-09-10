@@ -478,7 +478,8 @@ mod tests {
     fn changes_come_back_in_sorted_key_order() {
         let a = snap(&[("zulu", Fact::stable("1")), ("alpha", Fact::stable("1"))]);
         let b = snap(&[("zulu", Fact::stable("2")), ("alpha", Fact::stable("2"))]);
-        let keys: Vec<&str> = diff(&a, &b, false).iter().map(|c| c.key()).collect();
+        let changes = diff(&a, &b, false);
+        let keys: Vec<&str> = changes.iter().map(|c| c.key()).collect();
         assert_eq!(keys, vec!["alpha", "zulu"]);
     }
 }

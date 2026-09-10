@@ -1,3 +1,4 @@
+mod diff;
 mod facts;
 
 fn main() {
