@@ -22,12 +22,13 @@ fn snapshot_then_diff_against_itself_reports_no_drift() {
     let diff = specdrift()
         .arg("diff")
         .arg(&baseline)
-        .status()
+        .output()
         .expect("run diff");
     assert_eq!(
-        diff.code(),
+        diff.status.code(),
         Some(0),
-        "stable facts should not drift seconds apart"
+        "stable facts should not drift seconds apart, but these did:\n{}",
+        String::from_utf8_lossy(&diff.stdout)
     );
 
     std::fs::remove_dir_all(&dir).ok();
