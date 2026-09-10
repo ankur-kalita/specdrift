@@ -749,7 +749,8 @@ pub fn collect() -> Snapshot {
     snapshot.insert("cpu.count", Fact::stable(system.cpus().len().to_string()));
     if let Some(cpu) = system.cpus().first() {
         snapshot.insert("cpu.brand", Fact::stable(cpu.brand().trim()));
-        snapshot.insert("cpu.frequency_mhz", Fact::stable(cpu.frequency().to_string()));
+        // Volatile: Linux reports live clock speed, which drifts constantly.
+        snapshot.insert("cpu.frequency_mhz", Fact::volatile(cpu.frequency().to_string()));
     }
 
     // --- memory (bytes) ---------------------------------------------------

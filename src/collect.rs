@@ -34,9 +34,12 @@ pub fn collect() -> Snapshot {
     snapshot.insert("cpu.count", Fact::stable(system.cpus().len().to_string()));
     if let Some(cpu) = system.cpus().first() {
         snapshot.insert("cpu.brand", Fact::stable(cpu.brand().trim()));
+        // Volatile, not stable: Linux reports the *live* clock speed, which
+        // moves constantly as the chip throttles. macOS reports a fixed max,
+        // which made this look stable until CI ran it on Linux.
         snapshot.insert(
             "cpu.frequency_mhz",
-            Fact::stable(cpu.frequency().to_string()),
+            Fact::volatile(cpu.frequency().to_string()),
         );
     }
 
