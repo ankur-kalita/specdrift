@@ -1,0 +1,47 @@
+name: Release
+
+# Only runs for tags that look like v1.2.3 — never on ordinary pushes.
+on:
+  push:
+    tags:
+      - "v*"
+
+# GITHUB_TOKEN is read-only by default. Publishing a release needs write
+# access, and granting it here rather than globally is least privilege.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: specdrift-linux-x86_64.tar.gz
+          - os: macos-latest
+            asset: specdrift-macos-arm64.tar.gz
+          - os: windows-latest
+            asset: specdrift-windows-x86_64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.asset }} -C target/release specdrift
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path target/release/specdrift.exe -DestinationPath ${{ matrix.asset }}
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}
+          generate_release_notes: true
