@@ -1,0 +1,8 @@
+[package]
+name = "specdrift"
+version = "0.1.0"
+edition = "2021"
+description = "Detects what changed about your machine since a saved baseline"
+license = "MIT"
+
+[dependencies]
