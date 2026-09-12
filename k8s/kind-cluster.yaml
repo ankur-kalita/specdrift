@@ -1,0 +1,17 @@
+# A three-node local Kubernetes cluster. Each "node" is a Docker container
+# running kubelet — not a real machine — which is worth remembering when
+# specdrift reports what it sees.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: specdrift
+
+nodes:
+  - role: control-plane
+    # Expose a host port so a NodePort Service can be reached from the Mac
+    # without port-forwarding, if we ever need one.
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+  - role: worker
+  - role: worker

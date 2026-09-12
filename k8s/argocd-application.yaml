@@ -1,0 +1,72 @@
+# Argo CD Application: deploys the specdrift Helm chart from git.
+#
+# Argo CD does NOT run `helm install`. It runs `helm template` to render the
+# chart, then manages the resulting resources itself. So `helm list` will show
+# nothing — Argo CD owns the lifecycle, not Helm.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: specdrift
+  namespace: argocd
+  # Without this finalizer, deleting the Application leaves its resources
+  # orphaned in the cluster.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ankur-kalita/specdrift.git
+    targetRevision: main
+    path: charts/specdrift
+
+    helm:
+      # The Helm release name. Defaults to the Application name; set
+      # explicitly so renaming the Application doesn't rename every resource.
+      releaseName: specdrift
+
+      # Layered values files, relative to `path` above. Later files win.
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+      # Don't fail the whole sync if an optional overlay file is absent.
+      ignoreMissingValueFiles: true
+
+      # Structured inline values. Beats valueFiles, loses to parameters.
+      valuesObject:
+        podLabels:
+          managed-by-argocd: "true"
+        podAnnotations:
+          specdrift.io/source: argocd
+
+      # Highest precedence of all — overrides every values source above.
+      parameters:
+        - name: image.pullPolicy
+          value: IfNotPresent
+
+      # This chart ships no tests and no CRDs; both are set explicitly so the
+      # behaviour is stated rather than inherited from a default.
+      skipTests: true
+      skipCrds: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: specdrift
+
+  syncPolicy:
+    automated:
+      # Delete resources removed from git.
+      prune: true
+      # Revert manual `kubectl edit` changes back to what git says.
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Server-side apply, for the same annotation-size reason Argo CD's own
+      # install needs it.
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

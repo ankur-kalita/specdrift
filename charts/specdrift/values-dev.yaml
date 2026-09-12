@@ -1,0 +1,19 @@
+# Development overrides. Layered on top of values.yaml by Argo CD's
+# spec.source.helm.valueFiles. Later files win.
+mode: snapshot
+workload: cronjob
+
+cronjob:
+  # Fast feedback while experimenting.
+  schedule: "*/2 * * * *"
+  successfulJobsHistoryLimit: 5
+
+includeVolatile: true
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 50m
+    memory: 32Mi

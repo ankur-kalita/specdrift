@@ -1,0 +1,15 @@
+{{- if eq .Values.mode "diff" }}
+{{- if not .Values.baseline }}
+{{- fail "mode=diff requires a baseline. Set .Values.baseline to a snapshot JSON string (generate one with: docker run --rm specdrift:0.1.0 snapshot -o /dev/stdout)" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "specdrift.fullname" . }}-baseline
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "specdrift.labels" . | nindent 4 }}
+data:
+  baseline.json: |
+{{ .Values.baseline | indent 4 }}
+{{- end }}

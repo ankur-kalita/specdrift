@@ -1,0 +1,89 @@
+{{- if eq .Values.workload "cronjob" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "specdrift.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "specdrift.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.cronjob.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "specdrift.selectorLabels" . | nindent 12 }}
+            {{- with .Values.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          serviceAccountName: {{ include "specdrift.serviceAccountName" . }}
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            seccompProfile:
+              {{- toYaml .Values.securityContext.seccompProfile | nindent 14 }}
+          containers:
+            - name: specdrift
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              # Override the image ENTRYPOINT so we can run a shell pipeline.
+              command: ["/bin/sh", "-c"]
+              args:
+                - {{ include "specdrift.command" . | quote }}
+              securityContext:
+                allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+                readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+                capabilities:
+                  {{- toYaml .Values.securityContext.capabilities | nindent 18 }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              env:
+                # Surface which node this ran on, so drift can be attributed.
+                - name: SPECDRIFT_NODE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                {{- if eq .Values.mode "diff" }}
+                - name: baseline
+                  mountPath: /baseline
+                  readOnly: true
+                {{- end }}
+          volumes:
+            # readOnlyRootFilesystem is on, so specdrift needs one writable
+            # path. emptyDir lives and dies with the pod, which is correct
+            # here: the snapshot is printed to logs, not kept.
+            - name: work
+              emptyDir: {}
+            {{- if eq .Values.mode "diff" }}
+            - name: baseline
+              configMap:
+                name: {{ include "specdrift.fullname" . }}-baseline
+            {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

@@ -1,0 +1,22 @@
+# Production-shaped overrides: one pod per node, checking hourly, and
+# tolerating control-plane taints so no node is skipped.
+mode: snapshot
+workload: daemonset
+
+daemonset:
+  intervalSeconds: 3600
+
+includeVolatile: false
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi

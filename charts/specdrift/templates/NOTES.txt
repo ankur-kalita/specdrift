@@ -1,0 +1,22 @@
+specdrift {{ .Chart.AppVersion }} deployed as a {{ .Values.workload }} in mode "{{ .Values.mode }}".
+
+{{ if eq .Values.workload "cronjob" -}}
+Schedule: {{ .Values.cronjob.schedule }}
+
+Trigger a run immediately instead of waiting:
+  kubectl create job --from=cronjob/{{ include "specdrift.fullname" . }} drift-now -n {{ .Release.Namespace }}
+
+Read the output:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} --tail=-1
+{{- else -}}
+One pod runs on every node, checking every {{ .Values.daemonset.intervalSeconds }}s.
+
+Watch all nodes at once:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -f --prefix
+{{- end }}
+
+{{ if eq .Values.mode "snapshot" -}}
+Currently recording facts only. To detect drift, capture a baseline and switch mode:
+  docker run --rm specdrift:{{ .Values.image.tag }} snapshot -o /dev/stdout > baseline.json
+then set mode=diff with that file's contents in .Values.baseline
+{{- end }}

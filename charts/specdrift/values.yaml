@@ -1,0 +1,76 @@
+# Default values for specdrift.
+# Argo CD overrides these via spec.source.helm (valueFiles, valuesObject,
+# parameters). Precedence, lowest to highest:
+#   this file < valueFiles < values/valuesObject < parameters
+
+image:
+  repository: specdrift
+  tag: "0.1.0"
+  # IfNotPresent, not Always: the image is side-loaded into kind with
+  # `kind load docker-image` and does not exist in any registry. Always
+  # would make every pod fail with ImagePullBackOff.
+  pullPolicy: IfNotPresent
+
+# How specdrift runs:
+#   snapshot -> record this machine's facts and print them
+#   diff     -> compare against the baseline below, exit 1 if drifted
+mode: snapshot
+
+# Include volatile facts (free memory, uptime, clock speed) when diffing.
+includeVolatile: false
+
+# Workload shape:
+#   cronjob   -> run on a schedule, one pod per run
+#   daemonset -> one long-lived pod per node, loops forever
+workload: cronjob
+
+cronjob:
+  schedule: "*/5 * * * *"
+  # Kubernetes keeps finished pods around so you can read their logs.
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  # Forbid: never run two at once. Important because a drift check that
+  # overlaps itself produces confusing output.
+  concurrencyPolicy: Forbid
+  restartPolicy: OnFailure
+  backoffLimit: 2
+
+daemonset:
+  # Seconds between checks when workload=daemonset.
+  intervalSeconds: 300
+
+# Baseline snapshot JSON, used when mode=diff. Empty by default.
+# Generate one with:
+#   docker run --rm specdrift:0.1.0 snapshot -o /dev/stdout
+baseline: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+# specdrift only reads system information. It needs no privileges at all,
+# so we drop everything.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}

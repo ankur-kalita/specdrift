@@ -1,0 +1,11 @@
+# Build output — gigabytes, and rebuilt inside the image anyway.
+target/
+
+# Not needed to compile the binary.
+tests/
+docs/
+.github/
+.git/
+
+# Local snapshots
+*.json

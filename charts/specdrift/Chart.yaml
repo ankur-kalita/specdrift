@@ -1,0 +1,19 @@
+apiVersion: v2
+name: specdrift
+description: Runs specdrift in Kubernetes to detect hardware drift on cluster nodes
+type: application
+
+# version    = the chart's own version. Bump when templates change.
+# appVersion = the version of specdrift the chart deploys by default.
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - drift
+  - hardware
+  - monitoring
+home: https://github.com/ankur-kalita/specdrift
+sources:
+  - https://github.com/ankur-kalita/specdrift
+maintainers:
+  - name: ankur-kalita
