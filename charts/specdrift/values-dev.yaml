@@ -1,7 +1,7 @@
 # Development overrides. Layered on top of values.yaml by Argo CD's
 # spec.source.helm.valueFiles. Later files win.
 mode: snapshot
-workload: cronjob
+workload: daemonset
 
 cronjob:
   # Fast feedback while experimenting.
@@ -9,6 +9,9 @@ cronjob:
   successfulJobsHistoryLimit: 5
 
 includeVolatile: true
+
+daemonset:
+  intervalSeconds: 60
 
 resources:
   requests:
