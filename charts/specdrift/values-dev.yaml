@@ -1,6 +1,6 @@
 # Development overrides. Layered on top of values.yaml by Argo CD's
 # spec.source.helm.valueFiles. Later files win.
-mode: snapshot
+mode: diff
 workload: daemonset
 
 cronjob:
@@ -20,3 +20,109 @@ resources:
   limits:
     cpu: 50m
     memory: 32Mi
+
+# Baseline captured from specdrift-worker at 2026-09-12T12:15:22Z.
+# mode=diff compares the live node against this.
+baseline: |
+  {
+    "captured_at": "2026-09-12T12:15:22.062505005Z",
+    "facts": {
+      "cpu.brand": {
+        "class": "stable",
+        "value": ""
+      },
+      "cpu.count": {
+        "class": "stable",
+        "value": "10"
+      },
+      "cpu.frequency_mhz": {
+        "class": "volatile",
+        "value": "48"
+      },
+      "disk./.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "disk./dev/termination-log.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./dev/termination-log.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "disk./etc/hostname.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./etc/hostname.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "disk./etc/hosts.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./etc/hosts.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "disk./etc/resolv.conf.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./etc/resolv.conf.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "disk./work.available": {
+        "class": "volatile",
+        "value": "439729844224"
+      },
+      "disk./work.total": {
+        "class": "stable",
+        "value": "485473984512"
+      },
+      "memory.available": {
+        "class": "volatile",
+        "value": "5830283264"
+      },
+      "memory.total": {
+        "class": "stable",
+        "value": "10416644096"
+      },
+      "memory.used": {
+        "class": "volatile",
+        "value": "4586360832"
+      },
+      "os.arch": {
+        "class": "stable",
+        "value": "aarch64"
+      },
+      "os.kernel": {
+        "class": "stable",
+        "value": "7.0.12-linuxkit"
+      },
+      "os.name": {
+        "class": "stable",
+        "value": "Debian GNU/Linux"
+      },
+      "os.version": {
+        "class": "stable",
+        "value": "13"
+      },
+      "swap.total": {
+        "class": "stable",
+        "value": "2147479552"
+      },
+      "system.uptime_secs": {
+        "class": "volatile",
+        "value": "1520"
+      }
+    },
+    "version": 1
+  }
