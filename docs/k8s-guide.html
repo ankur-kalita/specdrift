@@ -457,6 +457,7 @@
     <li><a href="#helm">Part 4 — Helm: the chart</a></li>
     <li><a href="#application">Part 5 — Tying it together</a></li>
     <li><a href="#proof">Part 6 — Proving it works</a></li>
+    <li><a href="#experiments">Part 7 &mdash; The four experiments</a></li>
     <li><a href="#broke">Everything that broke</a></li>
     <li><a href="#cheatsheet">Command cheat sheet</a></li>
     <li><a href="#glossary">Glossary</a></li>
@@ -1159,6 +1160,245 @@ saved 24 facts to /work/snapshot.json
     <p>On your Mac specdrift reports <code>"Apple M4"</code>. Inside the cluster it reports <code>""</code>.</p>
     <p>On <strong>arm64 Linux</strong>, <code>/proc/cpuinfo</code> has no <code>model name</code> field — that's an x86 convention. So sysinfo has nothing to read and returns an empty string.</p>
     <p>It's not a crash, but it is a gap: an empty "stable" fact would look like drift if a future run ever <em>did</em> populate it. Worth fixing later by either omitting empty facts or falling back to another source.</p>
+  </div>
+</section>
+
+<section id="experiments">
+  <span class="sect-tag">Part 7</span>
+  <h2>The four experiments</h2>
+
+  <p class="lead">Having built it, we ran it &mdash; and the running is where everything was actually learned.</p>
+
+  <h3>1 &mdash; Break GitOps by hand</h3>
+
+  <p>The CronJob ran every 2 minutes. It was sabotaged directly in the cluster to run once a year, exactly as if someone had &ldquo;fixed&rdquo; production by hand:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl patch cronjob specdrift -n specdrift --type merge \
+    -p '{"spec":{"schedule":"0 0 1 1 *"}}'</span>
+cronjob.batch/specdrift patched
+
+<span class="p">$</span> <span class="d"># 5 seconds later...</span>
+  5s  argocd=Synced   schedule=<span class="g">*/2 * * * *</span>
+<span class="g">&gt;&gt;&gt; REVERTED. Argo CD put it back.</span></pre>
+  </div>
+
+  <p>Argo CD's own event log tells the whole story inside 27 seconds:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>kubectl get events -n argocd</span></div>
+<pre>Synced -&gt; OutOfSync                  <span class="d">&#8592; noticed the edit</span>
+Initiated automated sync             <span class="d">&#8592; decided to fix it</span>
+Partial sync operation succeeded     <span class="d">&#8592; applied git's version</span>
+OutOfSync -&gt; Synced                  <span class="d">&#8592; done</span></pre>
+  </div>
+
+  <p>The deeper part is who Kubernetes thinks owns that field:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl get cronjob specdrift -n specdrift \
+    -o jsonpath='{range .metadata.managedFields[*]}{.manager}{" -&gt; "}{.operation}{"\n"}{end}'</span>
+<span class="g">argocd-controller -&gt; Apply</span>
+kube-controller-manager -&gt; Update</pre>
+  </div>
+
+  <div class="why">
+    <span class="who">What this means in practice</span>
+    <p>Because <code>ServerSideApply=true</code> is set, Kubernetes records <strong>who owns which field</strong>. Argo CD owns <code>schedule</code>. The manual patch wasn't merely overwritten &mdash; it was an unauthorised edit to a field with a registered owner.</p>
+    <p>In a GitOps cluster, <code>kubectl edit</code> is not a way to change anything. It is a way to waste five seconds. The only way to change the cluster is to change git &mdash; so every change carries a commit, an author and a diff.</p>
+  </div>
+
+  <h3>2 &mdash; Change git, get a different cluster</h3>
+
+  <p>One line in <code>values-dev.yaml</code>: <code>workload: cronjob</code> &rarr; <code>daemonset</code>. Commit, push, and nudge Argo CD instead of waiting for its 3-minute poll:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl annotate application specdrift -n argocd \
+    argocd.argoproj.io/refresh=hard --overwrite</span></pre>
+  </div>
+
+  <p>Two things happened, both instructive.</p>
+
+  <h4>The CronJob was deleted</h4>
+  <p>Nobody deleted it. It disappeared from git, so <code>prune: true</code> removed it from the cluster. Without that setting it would have lingered forever, still firing every 2 minutes, owned by nothing.</p>
+
+  <h4>Two pods, not three</h4>
+  <p>A DaemonSet is meant to run on <em>every</em> node. Only the two workers got one:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl get pods -n specdrift -o custom-columns='POD:.metadata.name,NODE:.spec.nodeName'</span>
+specdrift-84lnr   specdrift-worker
+specdrift-ftglz   specdrift-worker2
+
+<span class="p">$</span> <span class="c">kubectl get node specdrift-control-plane -o jsonpath='{range .spec.taints[*]}{.key}{"="}{.effect}{"\n"}{end}'</span>
+node-role.kubernetes.io/control-plane=NoSchedule</pre>
+  </div>
+
+  <p>A <strong>taint</strong> is a &ldquo;keep out&rdquo; sign on a node; Kubernetes puts that one there so app workloads don't crowd the node running the cluster's brain. A pod needs a matching <strong>toleration</strong> to be allowed on. <code>values-dev.yaml</code> has none &mdash; <code>values-prod.yaml</code> does, which is precisely why it was written that way.</p>
+
+  <h3>3 &mdash; Comparing the nodes: a negative result</h3>
+
+  <p>The point of three nodes was to compare them. They came back <strong>byte-for-byte identical</strong>, including uptime to the second:</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Fact</th><th>worker</th><th>worker2</th><th>Reality</th></tr></thead>
+      <tbody>
+        <tr><td><code>cpu.count</code></td><td>10</td><td>10</td><td>the VM has 10</td></tr>
+        <tr><td><code>memory.total</code></td><td>10.4&nbsp;GB</td><td>10.4&nbsp;GB</td><td>the VM has 10.4&nbsp;GB</td></tr>
+        <tr><td><code>system.uptime_secs</code></td><td>1701</td><td>1701</td><td>the VM's uptime</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>kind nodes are not machines &mdash; they are containers sharing one Linux VM. Each &ldquo;node&rdquo; looks at that VM and reports the VM's hardware.</p>
+
+  <div class="gotcha">
+    <span class="who">Add it up: 30 CPUs on a 10-CPU machine</span>
+    <p>This is not a specdrift quirk; it is one of the most expensive real problems in containers. A JVM, a Go runtime or an nginx worker pool sizes itself from <code>cpu.count</code>. Put one in a container limited to half a CPU on a 64-core host and it spawns 64 threads and thrashes. That is why <code>GOMAXPROCS</code>, <code>-XX:ActiveProcessorCount</code> and cgroup-aware runtimes exist.</p>
+    <p>Two honest conclusions: <strong>node-to-node comparison cannot work in kind</strong> (there is only one machine underneath), and <strong>specdrift has a real gap</strong> &mdash; it should read cgroup limits (<code>/sys/fs/cgroup/memory.max</code>, <code>cpu.max</code>) to report what the container is <em>allowed</em>, not what the host <em>has</em>. Still open.</p>
+  </div>
+
+  <h3>4 &mdash; A real drift alarm, and the two bugs it exposed</h3>
+
+  <p>A baseline was captured from inside the cluster (so the comparison is like-for-like, not against a macOS snapshot), embedded in <code>values-dev.yaml</code>, and <code>mode</code> switched to <code>diff</code>. It worked &mdash; and immediately reported nonsense:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>kubectl logs -n specdrift</span></div>
+<pre>  ~ disk./.available                     ...844224 -&gt; ...963008
+  <span class="a">+ disk./baseline.available             439729963008</span>
+  <span class="a">+ disk./baseline.total                 485473984512</span>
+  ~ disk./dev/termination-log.available  ...844224 -&gt; ...963008
+  ~ disk./etc/hostname.available         ...844224 -&gt; ...963008
+  ~ disk./etc/hosts.available            ...844224 -&gt; ...963008
+  ~ disk./etc/resolv.conf.available      ...844224 -&gt; ...963008
+  ~ disk./work.available                 ...844224 -&gt; ...963008
+11 changes since 2026-09-12T12:15:22Z</pre>
+  </div>
+
+  <h4>Bug 1 &mdash; the tool created the drift it detected</h4>
+  <p>To run <code>diff</code>, the chart mounts the baseline ConfigMap at <code>/baseline</code>. That mount <em>is</em> a filesystem, so it was enumerated as a new disk. The baseline had been captured in <code>snapshot</code> mode, when <code>/baseline</code> did not exist.</p>
+  <p>Switching on drift detection <strong>caused</strong> drift. And <code>disk./baseline.total</code> is classified <strong>stable</strong>, so it fired even without <code>--all</code> &mdash; making the feature permanently, uselessly noisy.</p>
+
+  <h4>Bug 2 &mdash; one disk counted seven times</h4>
+  <p>Note the identical numbers on every line above. Those are not six disks. Verified inside the pod:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>kubectl exec -- cat /proc/self/mounts</span></div>
+<pre>overlay     /                      overlay
+/dev/vda1   /work                  ext4
+/dev/vda1   /baseline              ext4
+/dev/vda1   /etc/hosts             ext4
+/dev/vda1   /dev/termination-log   ext4
+/dev/vda1   /etc/hostname          ext4
+/dev/vda1   /etc/resolv.conf       ext4</pre>
+  </div>
+
+  <p>One real filesystem, six names for it. Kubernetes bind-mounts <code>/dev/vda1</code> repeatedly to inject <code>/etc/hosts</code>, the termination log and so on. specdrift counted each as a separate disk, so one change was reported six times.</p>
+
+  <h3>The fix: key by device, not mount point</h3>
+
+  <p>Both bugs die to one idea. <strong>A device is a filesystem's stable identity; mount points come and go.</strong> Six mounts collapse to one entry, and mounting <code>/baseline</code> no longer invents anything.</p>
+
+  <p>Crucially the logic is <em>pure</em>, so it went in a new module rather than into <code>collect.rs</code> &mdash; which keeps <code>collect.rs</code> dumb and makes the rule unit-testable:</p>
+
+  <div class="panel">
+    <div class="panel-head">src/disks.rs &mdash; the signature</div>
+<pre>pub struct RawDisk {
+    pub device: String,        // "/dev/vda1", "overlay"
+    pub mount_point: String,   // "/work"
+    pub total: u64,
+    pub available: u64,
+}
+
+/// One real filesystem. Note: no mount point. A filesystem can be
+/// mounted at several paths at once, and which paths those are is
+/// not a property of the hardware.
+pub struct Filesystem {
+    pub device: String,
+    pub total: u64,
+    pub available: u64,
+}
+
+pub fn unique_filesystems(raw: Vec&lt;RawDisk&gt;) -&gt; Vec&lt;Filesystem&gt;</pre>
+  </div>
+
+  <p>Seven tests, written first. The one that matters most encodes the bug directly:</p>
+
+  <div class="panel">
+    <div class="panel-head">src/disks.rs &mdash; the regression test</div>
+<pre>#[test]
+fn mounting_a_known_device_somewhere_new_changes_nothing() {
+    let before = unique_filesystems(vec![
+        raw("/dev/vda1", "/work", 100, 40),
+        raw("/dev/vda1", "/etc/hosts", 100, 40),
+    ]);
+
+    let after = unique_filesystems(vec![
+        raw("/dev/vda1", "/work", 100, 40),
+        raw("/dev/vda1", "/etc/hosts", 100, 40),
+        raw("/dev/vda1", "/baseline", 100, 40),  // the ConfigMap mount
+    ]);
+
+    assert_eq!(before, after, "a new mount must not look like new hardware");
+}</pre>
+  </div>
+
+  <h4>The result</h4>
+
+  <p>Rebuilding, reloading the image and restarting the DaemonSet produced a legitimate 19-change report &mdash; the fact <em>names</em> really had changed &mdash; showing 14 disk facts collapsing into 4:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>first run with the fix, against the OLD baseline</span></div>
+<pre>  <span class="d">- disk./.total                         485473984512</span>
+  <span class="d">- disk./dev/termination-log.total      485473984512</span>
+  <span class="d">- disk./etc/hostname.total             485473984512</span>
+  <span class="d">- disk./etc/hosts.total                485473984512</span>
+  <span class="d">- disk./etc/resolv.conf.total          485473984512</span>
+  <span class="d">- disk./work.total                     485473984512</span>
+  <span class="g">+ disk./dev/vda1.total                 485473984512</span>
+  <span class="g">+ disk.overlay.total                   485473984512</span></pre>
+  </div>
+
+  <p>After recapturing the baseline, the alarm behaves correctly for the first time:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>kubectl exec -n specdrift</span></div>
+<pre><span class="p">$</span> <span class="c">specdrift diff /baseline/baseline.json</span>
+<span class="g">no drift since 2026-09-12T17:18:12Z</span>
+exit code: <span class="g">0</span>
+
+<span class="p">$</span> <span class="c">specdrift diff /baseline/baseline.json --all</span>
+  ~ disk./dev/vda1.available  439529414656 -&gt; 439529373696
+  ~ disk.overlay.available    439529414656 -&gt; 439529373696
+  ~ memory.available          5553823744 -&gt; 5502603264
+  ~ memory.used               4862820352 -&gt; 4914040832
+  ~ system.uptime_secs        6975 -&gt; 7123
+5 changes since 2026-09-12T17:18:12Z
+exit code: <span class="a">1</span></pre>
+  </div>
+
+  <p>Silent when nothing is wrong, exit 1 when something is. Every remaining change is volatile &mdash; which is the whole point of that classification.</p>
+
+  <div class="why">
+    <span class="who">The pattern across the whole project</span>
+    <p>Four environments, four classes of bug, each invisible in the one before:</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Environment</th><th>Bug it exposed</th></tr></thead>
+        <tbody>
+          <tr><td>a MacBook</td><td><em>none &mdash; everything looked fine</em></td></tr>
+          <tr><td>CI, on Linux</td><td><code>cpu.frequency_mhz</code> misclassified as stable</td></tr>
+          <tr><td>a container</td><td><code>cpu.brand</code> empty on arm64</td></tr>
+          <tr><td>Kubernetes</td><td>self-inflicted drift; one disk counted seven times</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Each new environment found bugs the previous one could not see. That is the entire argument for CI, containers and staging environments &mdash; demonstrated rather than asserted.</p>
   </div>
 </section>
 
