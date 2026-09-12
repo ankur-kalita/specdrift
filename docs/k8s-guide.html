@@ -868,8 +868,8 @@ argocd-server-...                      <span class="g">1/1</span>  Running</pre>
 
   <div class="term">
     <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
-<pre><span class="p">$</span> <span class="c">kubectl port-forward svc/argocd-server -n argocd 8080:443</span>
-<span class="d"># then open https://localhost:8080
+<pre><span class="p">$</span> <span class="c">kubectl port-forward svc/argocd-server -n argocd 8081:443</span>
+<span class="d"># then open https://localhost:8081
 # the browser will warn about the certificate — it's self-signed. Proceed.</span>
 
 <span class="p">$</span> <span class="d"># username: admin — get the password with:</span>
@@ -880,6 +880,17 @@ argocd-server-...                      <span class="g">1/1</span>  Running</pre>
   <div class="gotcha">
     <span class="who">Why the password isn't written down here</span>
     <p>This file lives in a <strong>public</strong> GitHub repo. Secrets never go in committed files — always fetch them with the command above. The habit matters more than this one throwaway password does.</p>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">Port 8080 is already taken — use 8081</span>
+    <p>The first attempt used 8080 and the browser couldn't load the page, even though <code>port-forward</code> had started and printed <code>Forwarding from 127.0.0.1:8080</code>. The log then filled with:</p>
+<pre style="font-family:var(--mono);font-size:12.4px;line-height:1.6;overflow-x:auto;margin:8px 0 10px">error creating error stream for port 8080 -&gt; 8080: Timeout occurred</pre>
+    <p><strong>Docker Desktop was already listening on 8080.</strong> Two processes cannot own the same port, so the tunnel opened but every request timed out — which from the browser is indistinguishable from "nothing is running".</p>
+<pre style="font-family:var(--mono);font-size:12.4px;line-height:1.6;overflow-x:auto;margin:8px 0 10px">$ lsof -nP -iTCP:8080 -sTCP:LISTEN
+com.docke  46004  TCP *:8080 (LISTEN)      &#8592; Docker got there first
+kubectl    59818  TCP 127.0.0.1:8080       &#8592; ours, losing</pre>
+    <p><strong>The diagnostic:</strong> if a port-forward starts cleanly but the browser can't connect, run that <code>lsof</code> on the port. Anything listed means pick a different number — any free port in 8000&ndash;9000 works, the value is arbitrary.</p>
   </div>
 </section>
 
@@ -1186,6 +1197,12 @@ saved 24 facts to /work/snapshot.json
         <p>A genuine limitation in specdrift, surfaced only by running in the cluster. Same shape as the <code>cpu.frequency_mhz</code> bug CI caught earlier: <strong>a different environment revealed an assumption baked in on the Mac.</strong></p>
       </div>
     </li>
+    <li>
+      <div>
+        <h3>Port 8080 clash with Docker Desktop</h3>
+        <p><code>port-forward</code> reported success, the browser got nothing. Docker Desktop already held 8080, so every request timed out. Moved to 8081. <strong>A process starting successfully is not proof it is reachable</strong> &mdash; check with <code>lsof</code> before blaming the cluster.</p>
+      </div>
+    </li>
   </ol>
 
   <div class="why">
@@ -1236,8 +1253,9 @@ helm template test charts/specdrift -f charts/specdrift/values-prod.yaml
 helm template test charts/specdrift --set workload=daemonset --set mode=snapshot</pre></div>
 
   <h4>Argo CD UI</h4>
-  <div class="panel"><pre>kubectl port-forward svc/argocd-server -n argocd 8080:443
-# https://localhost:8080 — accept the self-signed cert warning
+  <div class="panel"><pre>lsof -nP -iTCP:8081 -sTCP:LISTEN     # check the port is free FIRST
+kubectl port-forward svc/argocd-server -n argocd 8081:443
+# https://localhost:8081 — accept the self-signed cert warning
 # user: admin
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d</pre></div>
