@@ -1,5 +1,6 @@
 mod collect;
 mod diff;
+mod disks;
 mod facts;
 
 use clap::{Parser, Subcommand};

@@ -1,3 +1,4 @@
+use crate::disks::{unique_filesystems, RawDisk};
 use crate::facts::{Fact, Snapshot};
 use sysinfo::{Disks, System};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
@@ -59,16 +60,28 @@ pub fn collect() -> Snapshot {
     snapshot.insert("swap.total", Fact::stable(system.total_swap().to_string()));
 
     // --- disks ------------------------------------------------------------
-    let disks = Disks::new_with_refreshed_list();
-    for disk in disks.list() {
-        let mount = disk.mount_point().display().to_string();
+    // The OS reports every *mount*, and Kubernetes bind-mounts one filesystem
+    // at many paths. Hand the raw list to the pure `disks` module, which
+    // collapses it to one entry per device. See disks::unique_filesystems.
+    let raw: Vec<RawDisk> = Disks::new_with_refreshed_list()
+        .list()
+        .iter()
+        .map(|disk| RawDisk {
+            device: disk.name().to_string_lossy().to_string(),
+            mount_point: disk.mount_point().display().to_string(),
+            total: disk.total_space(),
+            available: disk.available_space(),
+        })
+        .collect();
+
+    for fs in unique_filesystems(raw) {
         snapshot.insert(
-            format!("disk.{mount}.total"),
-            Fact::stable(disk.total_space().to_string()),
+            format!("disk.{}.total", fs.device),
+            Fact::stable(fs.total.to_string()),
         );
         snapshot.insert(
-            format!("disk.{mount}.available"),
-            Fact::volatile(disk.available_space().to_string()),
+            format!("disk.{}.available", fs.device),
+            Fact::volatile(fs.available.to_string()),
         );
     }
 
