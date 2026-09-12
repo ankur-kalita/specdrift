@@ -21,11 +21,11 @@ resources:
     cpu: 50m
     memory: 32Mi
 
-# Baseline captured from specdrift-worker at 2026-09-12T12:15:22Z.
-# mode=diff compares the live node against this.
+# Baseline recaptured after the device-keying fix. The previous one used
+# mount-point keys and is not comparable.
 baseline: |
   {
-    "captured_at": "2026-09-12T12:15:22.062505005Z",
+    "captured_at": "2026-09-12T17:18:12.579763377Z",
     "facts": {
       "cpu.brand": {
         "class": "stable",
@@ -39,57 +39,25 @@ baseline: |
         "class": "volatile",
         "value": "48"
       },
-      "disk./.available": {
+      "disk./dev/vda1.available": {
         "class": "volatile",
-        "value": "439729844224"
+        "value": "439529414656"
       },
-      "disk./.total": {
+      "disk./dev/vda1.total": {
         "class": "stable",
         "value": "485473984512"
       },
-      "disk./dev/termination-log.available": {
+      "disk.overlay.available": {
         "class": "volatile",
-        "value": "439729844224"
+        "value": "439529414656"
       },
-      "disk./dev/termination-log.total": {
-        "class": "stable",
-        "value": "485473984512"
-      },
-      "disk./etc/hostname.available": {
-        "class": "volatile",
-        "value": "439729844224"
-      },
-      "disk./etc/hostname.total": {
-        "class": "stable",
-        "value": "485473984512"
-      },
-      "disk./etc/hosts.available": {
-        "class": "volatile",
-        "value": "439729844224"
-      },
-      "disk./etc/hosts.total": {
-        "class": "stable",
-        "value": "485473984512"
-      },
-      "disk./etc/resolv.conf.available": {
-        "class": "volatile",
-        "value": "439729844224"
-      },
-      "disk./etc/resolv.conf.total": {
-        "class": "stable",
-        "value": "485473984512"
-      },
-      "disk./work.available": {
-        "class": "volatile",
-        "value": "439729844224"
-      },
-      "disk./work.total": {
+      "disk.overlay.total": {
         "class": "stable",
         "value": "485473984512"
       },
       "memory.available": {
         "class": "volatile",
-        "value": "5830283264"
+        "value": "5553823744"
       },
       "memory.total": {
         "class": "stable",
@@ -97,7 +65,7 @@ baseline: |
       },
       "memory.used": {
         "class": "volatile",
-        "value": "4586360832"
+        "value": "4862820352"
       },
       "os.arch": {
         "class": "stable",
@@ -121,7 +89,7 @@ baseline: |
       },
       "system.uptime_secs": {
         "class": "volatile",
-        "value": "1520"
+        "value": "6975"
       }
     },
     "version": 1
