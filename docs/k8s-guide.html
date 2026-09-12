@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>specdrift on Kubernetes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground:   #eceff3;
+    --surface:  #ffffff;
+    --sunken:   #e2e6ec;
+    --ink:      #131820;
+    --muted:    #5a6472;
+    --hair:     #cfd6df;
+    --accent:   #0f6d8c;
+    --accent-soft: #dcecf2;
+    --pass:     #1c7a4a;
+    --fail:     #ad2b21;
+    --warn:     #9a5708;
+
+    --term-bg:  #12171e;
+    --term-fg:  #ccd4de;
+    --term-dim: #6f7b89;
+    --term-grn: #63c48d;
+    --term-cyn: #62bcd6;
+    --term-red: #e08078;
+    --term-amb: #d9a55f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --col: 70ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:  #0d1117;
+      --surface: #161c24;
+      --sunken:  #1d242e;
+      --ink:     #e4e8ee;
+      --muted:   #929daa;
+      --hair:    #2c353f;
+      --accent:  #52bcd8;
+      --accent-soft: #17323d;
+      --pass:    #47b47c;
+      --fail:    #e0837b;
+      --warn:    #d6a05a;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:  #0d1117;
+    --surface: #161c24;
+    --sunken:  #1d242e;
+    --ink:     #e4e8ee;
+    --muted:   #929daa;
+    --hair:    #2c353f;
+    --accent:  #52bcd8;
+    --accent-soft: #17323d;
+    --pass:    #47b47c;
+    --fail:    #e0837b;
+    --warn:    #d6a05a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.65;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--col); margin-inline: auto; }
+
+  header.mast {
+    max-width: var(--col);
+    margin-inline: auto;
+    padding-block: 56px 36px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(32px, 7.5vw, 50px);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  h1 .dot { color: var(--accent); }
+
+  .standfirst {
+    font-family: var(--cond);
+    font-size: clamp(19px, 4.2vw, 24px);
+    font-weight: 600;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    margin: 0 0 22px;
+    text-wrap: balance;
+  }
+
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .facts li {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    border-radius: 2px;
+    padding: 3px 9px;
+    background: var(--surface);
+  }
+
+  /* ---- table of contents ---- */
+  nav.toc {
+    max-width: var(--col);
+    margin: 28px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  nav.toc p {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; font-size: 15px; }
+  nav.toc li { margin-bottom: 4px; }
+
+  section { padding-block: 46px 0; }
+
+  h2 {
+    font-family: var(--cond);
+    font-size: clamp(24px, 5.2vw, 31px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--cond);
+    font-size: 19.5px;
+    font-weight: 700;
+    margin: 30px 0 6px;
+  }
+
+  h4 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    margin: 22px 0 6px;
+    color: var(--accent);
+  }
+
+  .sect-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--hair);
+  }
+
+  p { margin: 0 0 15px; }
+  p.lead { font-size: 18px; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  ul, ol { margin: 0 0 15px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    border-radius: 3px;
+    padding: 1.5px 5px;
+    word-break: break-word;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---- callouts ---- */
+  .note, .gotcha, .why {
+    padding: 16px 18px;
+    margin: 20px 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .note   { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .gotcha { background: var(--sunken);      border-left: 3px solid var(--warn); }
+  .why    { background: var(--sunken);      border-left: 3px solid var(--pass); }
+  .note p:last-child, .gotcha p:last-child, .why p:last-child { margin-bottom: 0; }
+  .note .who, .gotcha .who, .why .who {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 7px;
+  }
+  .note .who   { color: var(--accent); }
+  .gotcha .who { color: var(--warn); }
+  .why .who    { color: var(--pass); }
+
+  /* ---- terminal ---- */
+  .term {
+    background: var(--term-bg);
+    color: var(--term-fg);
+    border-radius: 5px;
+    margin: 18px 0;
+    overflow: hidden;
+    border: 1px solid #232c37;
+  }
+  .term-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    background: #1a212a;
+    border-bottom: 1px solid #232c37;
+  }
+  .term-bar i { width: 9px; height: 9px; border-radius: 50%; background: #3a4552; display: block; }
+  .term-bar span {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.09em; color: var(--term-dim); margin-left: 6px;
+  }
+  .term pre {
+    margin: 0;
+    padding: 13px 15px 15px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.6px;
+    line-height: 1.7;
+    color: var(--term-fg);
+  }
+  .term .p { color: var(--term-grn); }
+  .term .c { color: var(--term-cyn); }
+  .term .d { color: var(--term-dim); }
+  .term .r { color: var(--term-red); }
+  .term .a { color: var(--term-amb); }
+  .term .g { color: var(--term-grn); }
+
+  /* ---- file panel ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    margin: 18px 0;
+  }
+  .panel-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--sunken);
+  }
+  .panel pre {
+    margin: 0;
+    padding: 13px 14px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.6px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  /* ---- tables ---- */
+  .tbl-scroll { overflow-x: auto; margin: 18px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 380px; }
+  th, td {
+    text-align: left;
+    padding: 9px 12px 9px 0;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--ink);
+  }
+  td code { background: none; padding: 0; color: var(--accent); }
+  td:first-child { padding-right: 18px; }
+  .nowrap td:first-child { white-space: nowrap; }
+
+  /* ---- architecture diagram ---- */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 22px 0;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; width: 100%; min-width: 440px; height: auto; }
+  .cap { font-size: 13.5px; color: var(--muted); margin: 10px 2px 0; line-height: 1.5; }
+
+  /* ---- numbered steps ---- */
+  ol.steps { list-style: none; counter-reset: s; margin: 20px 0 0; padding: 0; }
+  ol.steps > li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 14px;
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--hair);
+  }
+  ol.steps > li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  ol.steps > li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  ol.steps h3 { margin: 0 0 6px; font-size: 18px; }
+  ol.steps > li > div > p { font-size: 15.5px; }
+
+  /* ---- precedence ladder ---- */
+  .ladder { margin: 20px 0; display: grid; gap: 6px; }
+  .rung {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: baseline;
+    background: var(--surface);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--hair);
+    border-radius: 0 3px 3px 0;
+    padding: 10px 14px;
+  }
+  .rung.wins { border-left-color: var(--accent); background: var(--accent-soft); }
+  .rung .lvl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .rung .src { font-family: var(--mono); font-size: 13.5px; font-weight: 500; }
+  .rung .val { font-size: 13.5px; color: var(--muted); display: block; }
+
+  /* ---- glossary ---- */
+  .gloss { margin: 18px 0 0; }
+  .gloss details { border-bottom: 1px solid var(--hair); }
+  .gloss summary {
+    cursor: pointer;
+    padding: 11px 4px 11px 0;
+    font-family: var(--mono);
+    font-size: 14.5px;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .gloss summary::-webkit-details-marker { display: none; }
+  .gloss summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 16px;
+    flex: none;
+  }
+  .gloss details[open] summary::after { content: "\2212"; }
+  .gloss details[open] summary { color: var(--accent); }
+  .gloss .body { padding: 0 4px 16px 0; font-size: 15px; }
+  .gloss .body p { margin: 0 0 10px; }
+  .gloss .body p:last-child { margin: 0; }
+
+  footer {
+    max-width: var(--col);
+    margin: 56px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <p class="eyebrow">Runbook · Docker · kind · Helm · Argo CD</p>
+  <h1>specdrift on Kubernetes<span class="dot">.</span></h1>
+  <p class="standfirst">Every command that was run, every file that was written, and every thing that broke on the way — in order.</p>
+  <ul class="facts">
+    <li>3-node cluster</li>
+    <li>142 MB image</li>
+    <li>1 Helm chart</li>
+    <li>GitOps via Argo CD</li>
+  </ul>
+</header>
+
+<nav class="toc">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#what">What we built, and why each piece exists</a></li>
+    <li><a href="#before">What was already on the machine</a></li>
+    <li><a href="#docker">Part 1 — Docker: putting specdrift in a box</a></li>
+    <li><a href="#kind">Part 2 — kind: a cluster on your laptop</a></li>
+    <li><a href="#argocd">Part 3 — Argo CD: the GitOps robot</a></li>
+    <li><a href="#helm">Part 4 — Helm: the chart</a></li>
+    <li><a href="#application">Part 5 — Tying it together</a></li>
+    <li><a href="#proof">Part 6 — Proving it works</a></li>
+    <li><a href="#broke">Everything that broke</a></li>
+    <li><a href="#cheatsheet">Command cheat sheet</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+    <li><a href="#cleanup">Cleanup</a></li>
+  </ol>
+</nav>
+
+<div class="wrap">
+
+<section id="what">
+  <span class="sect-tag">Overview</span>
+  <h2>What we built, and why each piece exists</h2>
+
+  <p class="lead">Four tools, stacked. Each one solves a problem created by the one before it.</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Tool</th><th>The problem it solves</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Docker</strong></td><td>"It works on my machine." Packs specdrift plus its whole environment into one image that runs identically anywhere.</td></tr>
+        <tr><td><strong>kind</strong></td><td>You need a Kubernetes cluster to practise on, and you don't have a datacentre. kind builds one out of Docker containers on your laptop.</td></tr>
+        <tr><td><strong>Helm</strong></td><td>Kubernetes YAML is repetitive and environment-specific. Helm turns it into a template with swappable values.</td></tr>
+        <tr><td><strong>Argo CD</strong></td><td>Someone has to actually run <code>kubectl apply</code>. Argo CD watches your git repo and applies changes for you, forever.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="diagram">
+    <svg viewBox="0 0 660 330" role="img" aria-label="Diagram: your Mac builds a Docker image and loads it into a three-node kind cluster; Argo CD inside the cluster watches GitHub, renders the Helm chart, and creates the CronJob.">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+
+      <!-- Mac -->
+      <rect x="8" y="18" width="180" height="120" rx="5" fill="var(--sunken)" stroke="var(--hair)"/>
+      <text x="22" y="40" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--ink)">your Mac</text>
+      <text x="22" y="62" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">Dockerfile</text>
+      <text x="22" y="80" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">charts/specdrift/</text>
+      <text x="22" y="98" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">k8s/*.yaml</text>
+      <text x="22" y="122" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">docker build</text>
+
+      <!-- GitHub -->
+      <rect x="240" y="18" width="180" height="66" rx="5" fill="var(--surface)" stroke="var(--hair)"/>
+      <text x="254" y="40" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--ink)">GitHub</text>
+      <text x="254" y="60" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">the chart, in git</text>
+      <text x="254" y="76" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="var(--muted)">the single source of truth</text>
+
+      <path d="M 188 45 L 236 45" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a1)"/>
+      <text x="192" y="38" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--muted)">git push</text>
+
+      <!-- cluster box -->
+      <rect x="240" y="108" width="412" height="208" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <text x="254" y="128" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--ink)">kind cluster &#8220;specdrift&#8221;</text>
+      <text x="254" y="144" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">3 nodes, each one a Docker container</text>
+
+      <!-- argocd -->
+      <rect x="254" y="158" width="164" height="76" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="266" y="178" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600" fill="var(--ink)">argocd ns</text>
+      <text x="266" y="196" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">7 pods</text>
+      <text x="266" y="212" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">polls git every 3 min</text>
+      <text x="266" y="228" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">runs helm template</text>
+
+      <path d="M 330 84 L 330 154" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a1)"/>
+      <text x="336" y="112" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--muted)">pull</text>
+
+      <!-- specdrift ns -->
+      <rect x="446" y="158" width="190" height="76" rx="4" fill="var(--surface)" stroke="var(--hair)"/>
+      <text x="458" y="178" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600" fill="var(--ink)">specdrift ns</text>
+      <text x="458" y="196" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">CronJob every 2 min</text>
+      <text x="458" y="212" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">ServiceAccount</text>
+      <text x="458" y="228" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">pods write to logs</text>
+
+      <path d="M 418 196 L 442 196" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a1)"/>
+
+      <!-- image load -->
+      <path d="M 98 138 L 98 268 L 250 268" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#a1)"/>
+      <text x="104" y="262" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--accent)">kind load docker-image</text>
+      <text x="254" y="286" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">the image is side-loaded onto every node —</text>
+      <text x="254" y="302" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="var(--muted)">it never goes to a registry</text>
+    </svg>
+    <p class="cap">Two separate paths into the cluster: the <em>chart</em> travels through git and Argo CD; the <em>image</em> is pushed straight onto the nodes. Forgetting the second one is the most common way this setup fails.</p>
+  </div>
+</section>
+
+<section id="before">
+  <span class="sect-tag">Starting point</span>
+  <h2>What was already on the machine</h2>
+
+  <p>Nothing needed installing. Everything was already there from your class work:</p>
+
+  <div class="tbl-scroll">
+    <table class="nowrap">
+      <thead><tr><th>Tool</th><th>Version</th><th>What it's for</th></tr></thead>
+      <tbody>
+        <tr><td><code>docker</code></td><td>29.7.2</td><td>Building and running containers</td></tr>
+        <tr><td><code>kubectl</code></td><td>v1.36.4</td><td>Talking to a Kubernetes cluster</td></tr>
+        <tr><td><code>kind</code></td><td>v0.33.0</td><td>Kubernetes IN Docker — local clusters</td></tr>
+        <tr><td><code>helm</code></td><td>v4.2.4</td><td>Kubernetes templating</td></tr>
+        <tr><td><code>minikube</code></td><td>v1.38.1</td><td>Alternative to kind. Unused here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The one thing that wasn't running</h3>
+  <p>Docker Desktop was closed. Everything else depends on it — even <code>kind</code>, because kind nodes <em>are</em> Docker containers. The symptom:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">docker ps</span>
+<span class="r">failed to connect to the docker API at unix:///Users/akquasar/.docker/run/docker.sock;
+check if the path is correct and if the daemon is running</span></pre>
+  </div>
+
+  <p>Fixed by launching it and waiting for the socket to appear:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">open -a Docker</span>
+<span class="d">daemon up after ~8s</span>
+ Server Version: 29.7.2
+ CPUs: 10
+ Total Memory: 9.701GiB</pre>
+  </div>
+
+  <div class="note">
+    <span class="who">Remember this number</span>
+    <p>Docker Desktop gets <strong>9.7 GB</strong>, not your Mac's full 17 GB. It runs a Linux virtual machine, and that VM has its own budget. This comes back later when specdrift reports what it sees.</p>
+  </div>
+</section>
+
+<section id="docker">
+  <span class="sect-tag">Part 1</span>
+  <h2>Docker: putting specdrift in a box</h2>
+
+  <p>Kubernetes can't run a Rust binary. It only runs <strong>container images</strong>. So step one is turning specdrift into one.</p>
+
+  <h3>The Dockerfile, stage by stage</h3>
+
+  <p>The key idea is a <strong>multi-stage build</strong>. Compiling Rust needs a ~1.5 GB toolchain. Running the result needs a 5 MB binary. A multi-stage build uses the big thing, then throws it away.</p>
+
+  <div class="panel">
+    <div class="panel-head">Dockerfile</div>
+<pre># ---- Stage 1: build ----
+FROM rust:1-slim AS builder
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo build --release --locked
+
+# ---- Stage 2: run ----
+FROM debian:stable-slim
+RUN useradd --create-home --shell /bin/bash drift
+COPY --from=builder /src/target/release/specdrift /usr/local/bin/specdrift
+USER drift
+WORKDIR /home/drift
+ENTRYPOINT ["/usr/local/bin/specdrift"]
+CMD ["--help"]</pre>
+  </div>
+
+  <p>Line by line, the parts that matter:</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Line</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>AS builder</code></td><td>Names this stage so the second one can steal files from it.</td></tr>
+        <tr><td><code>--locked</code></td><td>Forces the exact dependency versions from <code>Cargo.lock</code>. Without it a build could silently pick newer libraries than you tested with.</td></tr>
+        <tr><td><code>COPY --from=builder</code></td><td>The whole trick. Copies just the compiled binary out of stage 1. Stage 1 is then discarded.</td></tr>
+        <tr><td><code>useradd</code> + <code>USER drift</code></td><td>Runs as a normal user, not root. Kubernetes security policies reject root containers, and specdrift only <em>reads</em> system info — it needs no privileges at all.</td></tr>
+        <tr><td><code>ENTRYPOINT</code></td><td>The command that always runs. Anything you pass becomes its arguments, so <code>docker run specdrift snapshot</code> works naturally.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>.dockerignore</h4>
+  <p>Same idea as <code>.gitignore</code> — it stops files being sent to the build. Critically it excludes <code>target/</code>, which is hundreds of megabytes of build output that would be copied in and then recompiled anyway.</p>
+
+  <div class="panel">
+    <div class="panel-head">.dockerignore</div>
+<pre>target/
+tests/
+docs/
+.github/
+.git/
+*.json</pre>
+  </div>
+
+  <h3>Building it</h3>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">docker build -t specdrift:0.1.0 -t specdrift:latest .</span>
+<span class="d">...</span>
+<span class="g">naming to docker.io/library/specdrift:0.1.0 done</span>
+
+<span class="p">$</span> <span class="c">docker images specdrift</span>
+specdrift:0.1.0  142MB
+specdrift:latest 142MB</pre>
+  </div>
+
+  <p>Two tags, one image. <code>0.1.0</code> is the one to reference in Kubernetes — <code>latest</code> is a trap in clusters, because it gives you no way to know what's actually deployed.</p>
+
+  <h3>What the container thinks the machine is</h3>
+
+  <p>This is the genuinely interesting bit, and it matters for a tool whose job is spotting hardware change:</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Fact</th><th>Value</th><th>Whose machine is that?</th></tr></thead>
+      <tbody>
+        <tr><td><code>os.name</code></td><td>Debian GNU/Linux</td><td>the <strong>container's</strong> userspace</td></tr>
+        <tr><td><code>os.kernel</code></td><td>7.0.12-linuxkit</td><td>the <strong>Docker VM's</strong> kernel</td></tr>
+        <tr><td><code>cpu.count</code></td><td>10</td><td>the <strong>VM's</strong> CPU allocation</td></tr>
+        <tr><td><code>memory.total</code></td><td>10.4 GB</td><td>the <strong>VM's</strong> RAM, not your 17 GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="why">
+    <span class="who">Why this is worth knowing</span>
+    <p>Your Mac appears <em>nowhere</em> in that list. A container reports a blend of three different machines. So "what does this container think it's running on" is a real question with a surprising answer — and a drift detector is exactly the right tool for asking it.</p>
+  </div>
+</section>
+
+<section id="kind">
+  <span class="sect-tag">Part 2</span>
+  <h2>kind: a cluster on your laptop</h2>
+
+  <p><strong>kind</strong> stands for <em>Kubernetes IN Docker</em>. Each "node" of the cluster is a Docker container running kubelet. It is not a simulation — it's real Kubernetes, just with containers standing in for machines.</p>
+
+  <h3>The cluster config</h3>
+
+  <div class="panel">
+    <div class="panel-head">k8s/kind-cluster.yaml</div>
+<pre>kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: specdrift
+
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+  - role: worker
+  - role: worker</pre>
+  </div>
+
+  <ul>
+    <li><strong>1 control-plane + 2 workers.</strong> Three nodes, because for a <em>drift detector</em> comparing nodes against each other is the interesting experiment. A single-node cluster can't show you that.</li>
+    <li><strong><code>extraPortMappings</code></strong> punches a hole from your Mac into the cluster on port 30080, so a NodePort Service could be reached later without port-forwarding.</li>
+  </ul>
+
+  <h3>Creating it</h3>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kind create cluster --config k8s/kind-cluster.yaml --wait 120s</span>
+ &#10003; Installing CNI
+ &#10003; Installing StorageClass
+ &#10003; Joining worker nodes
+ &#10003; Waiting &#8804; 2m0s for control-plane = Ready
+ &#10003; Ready after 11s
+Set kubectl context to <span class="a">"kind-specdrift"</span></pre>
+  </div>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl get nodes</span>
+NAME                      STATUS   ROLES           VERSION
+specdrift-control-plane   Ready    control-plane   v1.37.0
+specdrift-worker          Ready    &lt;none&gt;          v1.37.0
+specdrift-worker2         Ready    &lt;none&gt;          v1.37.0</pre>
+  </div>
+
+  <h3>Contexts — which cluster am I talking to?</h3>
+
+  <p>A <strong>context</strong> is the cluster <code>kubectl</code> currently points at. You now have three, and mixing them up is the easiest way to break something you didn't mean to touch:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl config get-contexts</span>
+CURRENT   NAME
+          docker-desktop     <span class="d">&#8592; Docker Desktop's own cluster</span>
+          kind-microshop     <span class="d">&#8592; your class project</span>
+<span class="g">*</span>         kind-specdrift     <span class="d">&#8592; this one</span></pre>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">Check before you apply</span>
+    <p><code>kubectl config current-context</code> before anything destructive. <code>kind create cluster</code> switches your context automatically — so your terminal silently started pointing somewhere new. Your class cluster <code>kind-microshop</code> was never touched, but only because we checked.</p>
+    <p>Switch with: <code>kubectl config use-context kind-microshop</code></p>
+  </div>
+
+  <h3>Getting the image into the cluster — the big gotcha</h3>
+
+  <p>The cluster nodes are <em>separate containers</em>. They have their own image storage and cannot see images on your Mac's Docker. An image that builds fine locally will fail in the cluster with <code>ImagePullBackOff</code> — Kubernetes goes looking for it in a registry, and it isn't there.</p>
+
+  <p>Normally you'd push to a registry (Docker Hub, GHCR). kind offers a shortcut:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kind load docker-image specdrift:0.1.0 --name specdrift</span>
+Image: "specdrift:0.1.0" ... not yet present on node "specdrift-worker", loading...
+Image: "specdrift:0.1.0" ... not yet present on node "specdrift-worker2", loading...
+Image: "specdrift:0.1.0" ... not yet present on node "specdrift-control-plane", loading...
+
+<span class="p">$</span> <span class="d"># verify on each node</span>
+specdrift-control-plane    1
+specdrift-worker           1
+specdrift-worker2          1</pre>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">The consequence for your YAML</span>
+    <p>Because the image exists only on the nodes and in no registry, <code>imagePullPolicy</code> <strong>must</strong> be <code>IfNotPresent</code> or <code>Never</code>. The default for a <code>:latest</code> tag is <code>Always</code> — which would ignore the local copy, try to pull, and fail. This is why the chart sets it explicitly, and why the Argo CD Application pins it again as a parameter.</p>
+    <p><strong>You must re-run <code>kind load</code> every time you rebuild the image.</strong> Argo CD syncs the chart from git; it has no idea your image changed.</p>
+  </div>
+</section>
+
+<section id="argocd">
+  <span class="sect-tag">Part 3</span>
+  <h2>Argo CD: the GitOps robot</h2>
+
+  <h3>What GitOps actually means</h3>
+
+  <p>Up to now, deploying meant <em>you</em> typing <code>kubectl apply</code>. That has two problems: nobody knows what's actually running, and anyone can change the cluster by hand and never tell you.</p>
+
+  <p><strong>GitOps</strong> inverts it. Your git repo is the single source of truth for what should be running. A robot in the cluster continuously compares reality against git and fixes any difference.</p>
+
+  <div class="note">
+    <span class="who">The mental model</span>
+    <p>CI (which you built earlier) answers <em>"is this code good?"</em> — it pushes. Argo CD answers <em>"does the cluster match git?"</em> — it pulls. They're two halves of the same pipeline, and they never talk to each other directly. Git is the handoff.</p>
+  </div>
+
+  <h3>Installing it</h3>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl create namespace argocd</span>
+<span class="p">$</span> <span class="c">kubectl apply -n argocd --server-side --force-conflicts \
+    -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml</span></pre>
+  </div>
+
+  <p>Note <code>--server-side --force-conflicts</code>. This is not optional, and here is why.</p>
+
+  <div class="gotcha">
+    <span class="who">The error you get without it</span>
+<pre style="font-family:var(--mono);font-size:12.4px;line-height:1.6;overflow-x:auto;margin:8px 0 10px">The CustomResourceDefinition "applicationsets.argoproj.io"
+is invalid: metadata.annotations: Too long:
+may not be more than 262144 bytes</pre>
+    <p>Plain <code>kubectl apply</code> saves a copy of the entire resource into an annotation called <code>last-applied-configuration</code>, so it can work out what changed next time. Argo CD's <code>applicationsets</code> CRD is bigger than the 256 KB annotation limit, so that copy won't fit.</p>
+    <p><strong>Server-side apply</strong> lets the API server track changes itself, so no annotation is needed. Your instructor's command uses the same two flags — this is simply how Argo CD has to be installed.</p>
+  </div>
+
+  <p>A first attempt without the flags left the cluster half-installed: the CRD was missing. Re-running <em>with</em> them fixed it, and all three CRDs appeared:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl get crd | grep argoproj</span>
+applications.argoproj.io       Namespaced   v1alpha1
+applicationsets.argoproj.io    Namespaced   v1alpha1
+appprojects.argoproj.io        Namespaced   v1alpha1</pre>
+  </div>
+
+  <h3>The pod that looks broken but isn't</h3>
+
+  <p>During startup <code>argocd-server</code> sits at <code>0/1</code>, and if you describe it you see:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre>Warning  Failed  13s  kubelet  Error: secret "argocd-redis" not found</pre>
+  </div>
+
+  <p>That secret is generated by Redis's own init job, which hasn't finished yet. It resolves on its own in 30–60 seconds. All 7 pods then go <code>1/1</code>:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl get pods -n argocd</span>
+argocd-application-controller-0        <span class="g">1/1</span>  Running
+argocd-applicationset-controller-...   <span class="g">1/1</span>  Running
+argocd-dex-server-...                  <span class="g">1/1</span>  Running
+argocd-notifications-controller-...    <span class="g">1/1</span>  Running
+argocd-redis-...                       <span class="g">1/1</span>  Running
+argocd-repo-server-...                 <span class="g">1/1</span>  Running
+argocd-server-...                      <span class="g">1/1</span>  Running</pre>
+  </div>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Pod</th><th>Its job</th></tr></thead>
+      <tbody>
+        <tr><td><code>application-controller</code></td><td>The brain. Compares git against the cluster and syncs.</td></tr>
+        <tr><td><code>repo-server</code></td><td>Clones your git repo and runs <code>helm template</code>.</td></tr>
+        <tr><td><code>server</code></td><td>The web UI and API.</td></tr>
+        <tr><td><code>redis</code></td><td>Cache, so it isn't re-rendering charts constantly.</td></tr>
+        <tr><td><code>dex-server</code></td><td>Single-sign-on. Unused here.</td></tr>
+        <tr><td><code>applicationset-controller</code></td><td>Generates many Applications from one template. Unused here.</td></tr>
+        <tr><td><code>notifications-controller</code></td><td>Slack / email alerts on sync events. Unused here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Opening the UI</h3>
+
+  <p>Argo CD isn't exposed outside the cluster by default. <code>port-forward</code> tunnels it to your Mac:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl port-forward svc/argocd-server -n argocd 8080:443</span>
+<span class="d"># then open https://localhost:8080
+# the browser will warn about the certificate — it's self-signed. Proceed.</span>
+
+<span class="p">$</span> <span class="d"># username: admin — get the password with:</span>
+<span class="p">$</span> <span class="c">kubectl -n argocd get secret argocd-initial-admin-secret \
+    -o jsonpath="{.data.password}" | base64 -d</span></pre>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">Why the password isn't written down here</span>
+    <p>This file lives in a <strong>public</strong> GitHub repo. Secrets never go in committed files — always fetch them with the command above. The habit matters more than this one throwaway password does.</p>
+  </div>
+</section>
+
+<section id="helm">
+  <span class="sect-tag">Part 4</span>
+  <h2>Helm: the chart</h2>
+
+  <p>Raw Kubernetes YAML has no variables. Deploying the same app to dev and prod means two near-identical files that drift apart. <strong>Helm</strong> is templating for Kubernetes: one set of templates, plus a values file per environment.</p>
+
+  <h3>What's in the chart</h3>
+
+  <div class="panel">
+    <div class="panel-head">charts/specdrift/</div>
+<pre>Chart.yaml              name, version, description
+values.yaml             default values — every knob, documented
+values-dev.yaml         dev overrides (fast schedule, verbose)
+values-prod.yaml        prod overrides (DaemonSet, hourly)
+.helmignore             files to keep out of the packaged chart
+templates/
+  _helpers.tpl          reusable snippets (names, labels)
+  serviceaccount.yaml   the identity pods run as
+  configmap-baseline.yaml  holds the baseline snapshot for diff mode
+  cronjob.yaml          workload=cronjob
+  daemonset.yaml        workload=daemonset
+  NOTES.txt             printed after install — what to do next</pre>
+  </div>
+
+  <h3>The two decisions the chart exposes</h3>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Value</th><th>Options</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>workload</code></td><td><code>cronjob</code> / <code>daemonset</code></td><td><strong>CronJob</strong>: runs on a schedule, one pod per run, exits. <strong>DaemonSet</strong>: one long-lived pod on <em>every</em> node, looping — so you can compare nodes.</td></tr>
+        <tr><td><code>mode</code></td><td><code>snapshot</code> / <code>diff</code></td><td><strong>snapshot</strong>: record facts and print them. <strong>diff</strong>: compare against a stored baseline and exit 1 if drifted.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Three details in the templates worth understanding</h3>
+
+  <h4>1. readOnlyRootFilesystem forces a writable volume</h4>
+  <p>The pod's filesystem is read-only for security, so specdrift can't write its snapshot anywhere normal. An <code>emptyDir</code> volume is mounted at <code>/work</code> to give it exactly one writable path. <code>emptyDir</code> lives and dies with the pod — correct here, because the snapshot goes to the logs, not to storage.</p>
+
+  <h4>2. The pod knows which node it's on</h4>
+  <div class="panel">
+    <div class="panel-head">templates/cronjob.yaml — excerpt</div>
+<pre>env:
+  - name: SPECDRIFT_NODE
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName</pre>
+  </div>
+  <p>A <code>fieldRef</code> injects information about the pod into the pod. Without it, a drift report from a 3-node cluster can't tell you <em>which</em> node drifted — which would make it useless.</p>
+
+  <h4>3. A guard rail instead of broken YAML</h4>
+  <div class="panel">
+    <div class="panel-head">templates/configmap-baseline.yaml — excerpt</div>
+<pre>{{- if eq .Values.mode "diff" }}
+{{- if not .Values.baseline }}
+{{- fail "mode=diff requires a baseline. Set .Values.baseline ..." }}
+{{- end }}</pre>
+  </div>
+  <p>Setting <code>mode=diff</code> with no baseline is a mistake. Helm's <code>fail</code> stops rendering with a message telling you how to fix it, rather than deploying a pod that crash-loops with a confusing error:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">helm template test . --set mode=diff</span>
+<span class="r">Error: execution error at (specdrift/templates/configmap-baseline.yaml:3:4):
+mode=diff requires a baseline. Set .Values.baseline to a snapshot JSON
+string (generate one with: docker run --rm specdrift:0.1.0 snapshot -o /dev/stdout)</span></pre>
+  </div>
+
+  <h3>Testing the chart without a cluster</h3>
+
+  <p><code>helm template</code> renders the YAML and prints it. Nothing is deployed. This is how you check a chart quickly:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">helm lint charts/specdrift</span>
+1 chart(s) linted, 0 chart(s) failed
+
+<span class="p">$</span> <span class="c">helm template test charts/specdrift</span>
+<span class="d"># default: CronJob, snapshot mode, */5 schedule</span>
+
+<span class="p">$</span> <span class="c">helm template test charts/specdrift --set workload=daemonset</span>
+<span class="d"># DaemonSet instead</span>
+
+<span class="p">$</span> <span class="c">helm template test charts/specdrift -f values.yaml -f values-dev.yaml</span>
+<span class="d"># schedule becomes */2 — the later file wins</span></pre>
+  </div>
+</section>
+
+<section id="application">
+  <span class="sect-tag">Part 5</span>
+  <h2>Tying it together: the Argo CD Application</h2>
+
+  <p>An <strong>Application</strong> is a Kubernetes resource that says: <em>take the chart at this git path, render it with these values, and keep this namespace matching the result.</em></p>
+
+  <div class="note">
+    <span class="who">The thing that surprises everyone</span>
+    <p>Argo CD does <strong>not</strong> run <code>helm install</code>. It runs <code>helm template</code> to render plain YAML, then manages those resources itself. So <code>helm list</code> shows <em>nothing</em> — Helm isn't tracking a release, Argo CD is. Helm is used purely as a rendering engine.</p>
+  </div>
+
+  <h3>The manifest</h3>
+
+  <div class="panel">
+    <div class="panel-head">k8s/argocd-application.yaml</div>
+<pre>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: specdrift
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ankur-kalita/specdrift.git
+    targetRevision: main
+    path: charts/specdrift
+
+    helm:
+      releaseName: specdrift
+
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+      ignoreMissingValueFiles: true
+
+      valuesObject:
+        podLabels:
+          managed-by-argocd: "true"
+
+      parameters:
+        - name: image.pullPolicy
+          value: IfNotPresent
+
+      skipTests: true
+      skipCrds: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: specdrift
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true</pre>
+  </div>
+
+  <h3>The value precedence ladder</h3>
+
+  <p>This is the core of the Argo CD Helm guide. Four places can set the same value, and they have a strict pecking order — <strong>lowest first</strong>:</p>
+
+  <div class="ladder">
+    <div class="rung">
+      <span class="lvl">1 · weakest</span>
+      <span><span class="src">chart's values.yaml</span><span class="val">schedule: */5 * * * *</span></span>
+    </div>
+    <div class="rung">
+      <span class="lvl">2</span>
+      <span><span class="src">valueFiles</span><span class="val">values-dev.yaml &#8594; schedule: */2 * * * *</span></span>
+    </div>
+    <div class="rung">
+      <span class="lvl">3</span>
+      <span><span class="src">values / valuesObject</span><span class="val">inline in the Application</span></span>
+    </div>
+    <div class="rung wins">
+      <span class="lvl">4 · wins</span>
+      <span><span class="src">parameters</span><span class="val">overrides everything above it</span></span>
+    </div>
+  </div>
+
+  <p>Within <code>valueFiles</code>, <strong>later files beat earlier ones</strong> — so the order of that list is meaningful, not cosmetic.</p>
+
+  <h3>What the other fields do</h3>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Field</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>finalizers</code></td><td>Without it, deleting the Application <em>orphans</em> everything it created — the pods keep running with nothing managing them.</td></tr>
+        <tr><td><code>targetRevision: main</code></td><td>Which git branch or tag to follow. Could be a tag like <code>v0.1.0</code> to pin a version.</td></tr>
+        <tr><td><code>releaseName</code></td><td>Defaults to the Application name. Set explicitly so renaming the Application doesn't rename every resource it owns.</td></tr>
+        <tr><td><code>ignoreMissingValueFiles</code></td><td>An absent optional overlay file is skipped instead of failing the whole sync.</td></tr>
+        <tr><td><code>prune: true</code></td><td>Resources deleted from git get deleted from the cluster. Without it, removed things linger forever.</td></tr>
+        <tr><td><code>selfHeal: true</code></td><td>Manual <code>kubectl edit</code> changes get reverted to match git. This is GitOps actually being enforced.</td></tr>
+        <tr><td><code>CreateNamespace=true</code></td><td>Creates the destination namespace if missing.</td></tr>
+        <tr><td><code>ServerSideApply=true</code></td><td>Same annotation-size reason Argo CD's own install needed it.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">selfHeal will fight you</span>
+    <p>With <code>selfHeal: true</code>, editing anything by hand gets silently reverted within minutes. That's the point — but while experimenting it feels like the cluster is haunted. To change something, change git. To experiment by hand, set <code>selfHeal: false</code> first.</p>
+  </div>
+</section>
+
+<section id="proof">
+  <span class="sect-tag">Part 6</span>
+  <h2>Proving it works</h2>
+
+  <p>The chart had to be pushed to GitHub first — Argo CD reads git, not your laptop:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">git add -A &amp;&amp; git commit -m "feat: add Docker image, kind cluster, Helm chart, Argo CD app"</span>
+<span class="p">$</span> <span class="c">git push</span>
+
+<span class="p">$</span> <span class="c">kubectl apply -f k8s/argocd-application.yaml</span>
+application.argoproj.io/specdrift created
+
+<span class="p">$</span> <span class="c">kubectl get application specdrift -n argocd</span>
+NAME        SYNC STATUS   HEALTH STATUS
+specdrift   <span class="g">Synced</span>        <span class="g">Healthy</span></pre>
+  </div>
+
+  <h3>Checking each layer of the ladder actually applied</h3>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="d"># valueFiles won over values.yaml?  (*/2, not */5)</span>
+<span class="p">$</span> <span class="c">kubectl get cronjob -n specdrift -o jsonpath='{.items[0].spec.schedule}'</span>
+<span class="g">*/2 * * * *</span>
+
+<span class="p">$</span> <span class="d"># valuesObject applied?</span>
+<span class="p">$</span> <span class="c">kubectl get cronjob -n specdrift -o jsonpath='{...template.metadata.labels}'</span>
+{"app.kubernetes.io/instance":"specdrift",
+ "app.kubernetes.io/name":"specdrift",
+ <span class="g">"managed-by-argocd":"true"</span>}
+
+<span class="p">$</span> <span class="d"># parameters applied?</span>
+<span class="p">$</span> <span class="c">kubectl get cronjob -n specdrift -o jsonpath='{...containers[0].imagePullPolicy}'</span>
+<span class="g">IfNotPresent</span></pre>
+  </div>
+
+  <h3>Running it now instead of waiting</h3>
+
+  <p>You don't have to wait for the schedule. <code>--from=cronjob/...</code> creates a one-off Job from the CronJob's template:</p>
+
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh</span></div>
+<pre><span class="p">$</span> <span class="c">kubectl create job --from=cronjob/specdrift drift-now -n specdrift</span>
+job.batch/drift-now created
+
+<span class="p">$</span> <span class="c">kubectl logs -n specdrift -l job-name=drift-now --tail=-1</span>
+saved 24 facts to /work/snapshot.json
+{
+  "version": 1,
+  "captured_at": "2026-09-12T11:59:20Z",
+  "facts": {
+    <span class="a">"cpu.brand": { "value": "", "class": "stable" },</span>
+    "cpu.count": { "value": "10", "class": "stable" },
+    "disk./.total": { "value": "485473984512", "class": "stable" },
+    ...</pre>
+  </div>
+
+  <div class="gotcha">
+    <span class="who">A real finding: cpu.brand is empty</span>
+    <p>On your Mac specdrift reports <code>"Apple M4"</code>. Inside the cluster it reports <code>""</code>.</p>
+    <p>On <strong>arm64 Linux</strong>, <code>/proc/cpuinfo</code> has no <code>model name</code> field — that's an x86 convention. So sysinfo has nothing to read and returns an empty string.</p>
+    <p>It's not a crash, but it is a gap: an empty "stable" fact would look like drift if a future run ever <em>did</em> populate it. Worth fixing later by either omitting empty facts or falling back to another source.</p>
+  </div>
+</section>
+
+<section id="broke">
+  <span class="sect-tag">Post-mortem</span>
+  <h2>Everything that broke, in order</h2>
+
+  <ol class="steps">
+    <li>
+      <div>
+        <h3>Docker daemon not running</h3>
+        <p><code>docker ps</code> → "check if the daemon is running". Everything depends on Docker, including kind, because kind nodes are containers. Fixed with <code>open -a Docker</code> and an 8-second wait.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Stale kubeconfig pointing at a dead cluster</h3>
+        <p><code>kubectl get nodes</code> against <code>docker-desktop</code> gave <code>connection refused</code> on port 50489. The context existed from an earlier session but the cluster behind it was gone. A context is just saved connection details — it doesn't prove anything is alive.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Argo CD CRD too big for kubectl apply</h3>
+        <p><code>metadata.annotations: Too long: may not be more than 262144 bytes</code>. Client-side apply stores the whole resource in an annotation; that CRD exceeds the limit. Fixed with <code>--server-side --force-conflicts</code>. The first partial install had to be re-applied.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>argocd-server: secret "argocd-redis" not found</h3>
+        <p>Looked like a real failure, was just startup ordering — Redis generates that secret from its own init job. Resolved itself in under a minute. <strong>Not every red status needs fixing; some need waiting.</strong></p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>cpu.brand empty on arm64 Linux</h3>
+        <p>A genuine limitation in specdrift, surfaced only by running in the cluster. Same shape as the <code>cpu.frequency_mhz</code> bug CI caught earlier: <strong>a different environment revealed an assumption baked in on the Mac.</strong></p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="why">
+    <span class="who">The pattern</span>
+    <p>Four of those five weren't bugs in anything we wrote — they were <em>environment</em> problems: something not running, something stale, a platform limit, a startup race. That is what most real DevOps debugging actually is.</p>
+  </div>
+</section>
+
+<section id="cheatsheet">
+  <span class="sect-tag">Reference</span>
+  <h2>Command cheat sheet</h2>
+
+  <h4>Where am I?</h4>
+  <div class="panel"><pre>kubectl config current-context          # which cluster am I about to change?
+kubectl config get-contexts             # list all of them
+kubectl config use-context kind-specdrift
+kind get clusters                       # which kind clusters exist</pre></div>
+
+  <h4>Rebuild and redeploy after changing Rust code</h4>
+  <div class="panel"><pre>docker build -t specdrift:0.1.0 .
+kind load docker-image specdrift:0.1.0 --name specdrift
+kubectl rollout restart daemonset/specdrift -n specdrift   # if workload=daemonset
+# CronJob picks up the new image on its next run automatically</pre></div>
+
+  <h4>Redeploy after changing the chart</h4>
+  <div class="panel"><pre>git add -A &amp;&amp; git commit -m "..." &amp;&amp; git push
+# then wait ~3 min for Argo CD to poll, or force it:
+kubectl patch application specdrift -n argocd --type merge \
+  -p '{"operation":{"sync":{"revision":"main"}}}'</pre></div>
+
+  <h4>See what's happening</h4>
+  <div class="panel"><pre>kubectl get application specdrift -n argocd          # Synced? Healthy?
+kubectl describe application specdrift -n argocd     # why not?
+kubectl get all -n specdrift
+kubectl logs -n specdrift -l app.kubernetes.io/name=specdrift --tail=-1
+kubectl get events -n specdrift --sort-by=.lastTimestamp</pre></div>
+
+  <h4>Run a drift check right now</h4>
+  <div class="panel"><pre>kubectl delete job drift-now -n specdrift --ignore-not-found
+kubectl create job --from=cronjob/specdrift drift-now -n specdrift
+kubectl wait --for=condition=complete job/drift-now -n specdrift --timeout=60s
+kubectl logs -n specdrift -l job-name=drift-now --tail=-1</pre></div>
+
+  <h4>Test the chart without deploying</h4>
+  <div class="panel"><pre>helm lint charts/specdrift
+helm template test charts/specdrift
+helm template test charts/specdrift -f charts/specdrift/values-prod.yaml
+helm template test charts/specdrift --set workload=daemonset --set mode=snapshot</pre></div>
+
+  <h4>Argo CD UI</h4>
+  <div class="panel"><pre>kubectl port-forward svc/argocd-server -n argocd 8080:443
+# https://localhost:8080 — accept the self-signed cert warning
+# user: admin
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d</pre></div>
+</section>
+
+<section id="glossary">
+  <span class="sect-tag">Reference</span>
+  <h2>Glossary</h2>
+
+  <p>Open whichever ones you need. No order — dip in.</p>
+
+  <div class="gloss">
+    <details>
+      <summary>image vs container</summary>
+      <div class="body"><p>An <strong>image</strong> is the recipe — a frozen filesystem plus a command. A <strong>container</strong> is one running copy of it. One image, many containers, same way one class makes many objects.</p></div>
+    </details>
+    <details>
+      <summary>multi-stage build</summary>
+      <div class="body"><p>A Dockerfile with several <code>FROM</code> lines. Earlier stages do heavy work (compiling); the final stage copies out only what's needed. Our builder stage is ~1.5 GB; the image we keep is 142 MB.</p></div>
+    </details>
+    <details>
+      <summary>registry</summary>
+      <div class="body"><p>A server that stores images — Docker Hub, GitHub Container Registry. Kubernetes normally pulls from one. We skipped it with <code>kind load docker-image</code>, which is why <code>imagePullPolicy</code> has to be <code>IfNotPresent</code>.</p></div>
+    </details>
+    <details>
+      <summary>node</summary>
+      <div class="body"><p>A machine that runs your workloads. In a real cluster it's a server; in kind it's a Docker container pretending to be one. Ours: one control-plane and two workers.</p></div>
+    </details>
+    <details>
+      <summary>pod</summary>
+      <div class="body"><p>The smallest thing Kubernetes runs — one or more containers that share a network address and storage. You rarely create pods directly; something else (a CronJob, a DaemonSet) creates them for you.</p></div>
+    </details>
+    <details>
+      <summary>namespace</summary>
+      <div class="body"><p>A folder inside a cluster, for keeping unrelated things apart. We use two: <code>argocd</code> for the robot, <code>specdrift</code> for our app.</p></div>
+    </details>
+    <details>
+      <summary>context</summary>
+      <div class="body"><p>Saved details for talking to one cluster — address, credentials, default namespace. <code>kubectl</code> uses whichever is current. A context can exist for a cluster that's long gone, which is exactly what bit us with <code>docker-desktop</code>.</p></div>
+    </details>
+    <details>
+      <summary>CronJob</summary>
+      <div class="body"><p>Runs a pod on a schedule, cron-style. <code>*/2 * * * *</code> means every 2 minutes. Each run creates a fresh pod that does its work and exits.</p></div>
+    </details>
+    <details>
+      <summary>DaemonSet</summary>
+      <div class="body"><p>Runs exactly one pod on <em>every</em> node, automatically — including nodes added later. Normally used for log collectors and monitoring agents. Here it lets specdrift compare nodes against each other.</p></div>
+    </details>
+    <details>
+      <summary>emptyDir</summary>
+      <div class="body"><p>Scratch storage that's created empty when a pod starts and deleted when it stops. We need it because the container's root filesystem is read-only, and specdrift has to write its snapshot somewhere.</p></div>
+    </details>
+    <details>
+      <summary>ConfigMap</summary>
+      <div class="body"><p>A blob of configuration stored in the cluster, mountable as files in a pod. We use one to hold the baseline snapshot for <code>diff</code> mode. (For passwords you'd use a Secret instead.)</p></div>
+    </details>
+    <details>
+      <summary>CRD (CustomResourceDefinition)</summary>
+      <div class="body"><p>Teaches Kubernetes a new kind of object. Argo CD installs three, which is how <code>kind: Application</code> becomes a thing the cluster understands. The big one is what blew past the annotation size limit.</p></div>
+    </details>
+    <details>
+      <summary>server-side apply</summary>
+      <div class="body"><p>The API server tracks who owns which fields, instead of <code>kubectl</code> stashing a full copy of the resource in an annotation. Needed for resources too big for that 256 KB annotation — like Argo CD's CRDs.</p></div>
+    </details>
+    <details>
+      <summary>GitOps</summary>
+      <div class="body"><p>Git is the source of truth for what should be running; a robot in the cluster continuously makes reality match. Nobody deploys by hand, and every change has a commit behind it.</p></div>
+    </details>
+    <details>
+      <summary>sync / drift (Argo CD sense)</summary>
+      <div class="body"><p><strong>Synced</strong> = cluster matches git. <strong>OutOfSync</strong> = it doesn't, either because git changed or someone edited the cluster. With <code>selfHeal: true</code>, Argo CD fixes the second case automatically. (Different sense of "drift" from specdrift's — one is config, one is hardware.)</p></div>
+    </details>
+    <details>
+      <summary>Helm chart / release / values</summary>
+      <div class="body"><p>A <strong>chart</strong> is the template package. <strong>Values</strong> fill in the blanks. A <strong>release</strong> is one installed instance. Note: with Argo CD there's no real Helm release — Argo CD only borrows Helm to render YAML.</p></div>
+    </details>
+    <details>
+      <summary>port-forward</summary>
+      <div class="body"><p>Tunnels a port on your laptop to a service inside the cluster. Perfect for poking at something during development; not how you'd expose anything for real (that's Services and Ingress).</p></div>
+    </details>
+    <details>
+      <summary>ImagePullBackOff</summary>
+      <div class="body"><p>Kubernetes couldn't fetch the image and is retrying with growing delays. Nearly always a typo in the name/tag, a missing registry login, or — the case here — an image that only exists on your laptop and was never loaded into the cluster.</p></div>
+    </details>
+  </div>
+</section>
+
+<section id="cleanup">
+  <span class="sect-tag">When you're done</span>
+  <h2>Cleanup</h2>
+
+  <p>Ordered from gentlest to most complete. Note that step 1 alone won't do much while <code>selfHeal</code> is on — Argo CD just puts things back.</p>
+
+  <div class="panel">
+    <div class="panel-head">stop the app, keep the cluster</div>
+<pre>kubectl delete -f k8s/argocd-application.yaml
+# the finalizer makes this delete the CronJob and friends too</pre>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">delete the whole cluster</div>
+<pre>kind delete cluster --name specdrift
+# removes the 3 node containers, Argo CD, everything.
+# your kind-microshop class cluster is untouched.</pre>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">reclaim disk</div>
+<pre>docker image rm specdrift:0.1.0 specdrift:latest
+docker system prune          # dangling build layers; asks first
+docker builder prune         # the build cache, which gets large</pre>
+  </div>
+
+  <div class="note">
+    <span class="who">Leaving it running is fine</span>
+    <p>The cluster costs you some RAM and nothing else. But it does <strong>not</strong> survive a reboot cleanly — after restarting your Mac, start Docker Desktop first, then the kind containers come back on their own. If they don't: <code>docker start specdrift-control-plane specdrift-worker specdrift-worker2</code>.</p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <span>specdrift on Kubernetes</span>
+  <span>github.com/ankur-kalita/specdrift</span>
+  <span>12 Sep 2026</span>
+</footer>
+
+</body>
+</html>
